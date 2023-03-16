@@ -80,14 +80,6 @@ function getUserLocation(): Promise<Point> {
   });
 }
 
-getUserLocation().then((loc) => {
-  (<HTMLInputElement>document.getElementById("userLatitude")).value = `${loc.lat}`;
-  (<HTMLInputElement>document.getElementById("userLongitude")).value = `${loc.lon}`;
-}).catch((_err) => {
-  (<HTMLInputElement>document.getElementById("userLatitude")).value = '45';
-  (<HTMLInputElement>document.getElementById("userLongitude")).value = '-122';
-});
-
 function readUserLocation() {
   var newLat = (<HTMLInputElement>document.getElementById("userLatitude")).value;
   var newLon = (<HTMLInputElement>document.getElementById("userLongitude")).value;
@@ -155,4 +147,16 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
   
   return courses;
 }
+
+function page_init(): void {
+  getUserLocation().then((loc) => {
+    (<HTMLInputElement>document.getElementById("userLatitude")).value = `${loc.lat}`;
+    (<HTMLInputElement>document.getElementById("userLongitude")).value = `${loc.lon}`;
+  }).catch((_err) => {
+    (<HTMLInputElement>document.getElementById("userLatitude")).value = '45';
+    (<HTMLInputElement>document.getElementById("userLongitude")).value = '-122';
+  });
+}
+
+page_init();
 
