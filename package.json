@@ -6,11 +6,21 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
-    "start": "python3 -m http.server"
+    "start": "python3 -m http.server",
+    "lint": "eslint ./src/* --fix && prettier -w ./src/*"
   },
   "author": "Jeremy Sigrist",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^4.9.5"
+    "@typescript-eslint/eslint-plugin": "^5.55.0",
+    "eslint": "^8.36.0",
+    "eslint-config-standard-with-typescript": "^34.0.1",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "typescript": "^5.0.2"
+  },
+  "dependencies": {
+    "prettier": "^2.8.4"
   }
 }

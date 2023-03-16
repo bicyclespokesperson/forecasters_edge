@@ -1,9 +1,16 @@
 body {
   background-color: lightgreen;
 }
-td {
+td, th {
   text-align: center;
-}
-th {
   text-align: center;
+  border: 1px solid darkblue;
+  padding: 5px;
 }
+
+#nearbyCourses {
+  border-collapse: collapse;
+  border: 1px solid darkblue;
+  border-spacing: 5px;
+}
+
