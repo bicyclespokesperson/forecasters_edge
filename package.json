@@ -1,0 +1,16 @@
+{
+  "name": "forecasters-edge",
+  "version": "0.0.1",
+  "description": "Show the nearby disc golf courses with the best weather",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc",
+    "start": "python3 -m http.server"
+  },
+  "author": "Jeremy Sigrist",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  }
+}

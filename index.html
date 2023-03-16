@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+</head>
+
+<body>
+  <script>0</script>
+  <h1>Forecaster's Edge</h1><br>
+  <label for="userZipCode">Latitude and Longitude:</label><br>
+  <input type="text" id="userLatitude" value="" onchange="updateValue()">
+  <input type="text" id="userLongitude" value="" onchange="updateValue()">
+  <script src="./dist/weather.js"></script>
+  <br>
+  <button onclick="nearestCourses()">Show Nearby Courses</button>
+  <br>
+   <table id="nearbyCourses">
+  <thead>
+    <th>Course name</th>
+    <th>Number of Holes</th>
+    <th>Approximate Distance Away (miles)</th>
+  </thead>
+  <tbody>
+  <tr>
+    <td>Milo McIver</td>
+    <td>27</td>
+    <td>35 km</td>
+  </tr>
+  </tbody>
+</table> 
+</body>
+</html>
+
