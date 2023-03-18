@@ -1,4 +1,4 @@
-const mockWeatherRequests = false;
+const mockWeatherRequests = true;
 
 const maxDecimalPlaces = 4;
 
@@ -26,6 +26,7 @@ class WeatherResponse {
     windspeed_10m: number[];
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(data: any) {
     this.latitude = data.latitude;
     this.longitude = data.longitude;
@@ -62,9 +63,9 @@ class Point {
 }
 
 class DiscGolfCourse {
-  private weatherScore: number = 1;
+  private weatherScore = 1;
 
-  public distanceAwayKm: number = NaN;
+  public distanceAwayKm = NaN;
 
   constructor(
     public name: string,
@@ -121,7 +122,7 @@ function calcWeatherScore(weather: WeatherResponse): number {
 
   if (offsetHours >= weather.hourly.precipitation_probability.length) {
     throw new Error(
-      `Insufficient weather data. Needed ${offsetHours} hours, got ${weather.hourly.precipitation_probability.length}.`
+      `Insufficient weather data. Needed ${offsetHours + 1} hours, got ${weather.hourly.precipitation_probability.length}.`
     );
   }
 
