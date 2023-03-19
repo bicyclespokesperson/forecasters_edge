@@ -1,4 +1,4 @@
-const mockWeatherRequests = true;
+const mockWeatherRequests = false;
 
 const maxDecimalPlaces = 4;
 
@@ -122,13 +122,23 @@ function calcWeatherScore(weather: WeatherResponse): number {
 
   if (offsetHours >= weather.hourly.precipitation_probability.length) {
     throw new Error(
-      `Insufficient weather data. Needed ${offsetHours + 1} hours, got ${weather.hourly.precipitation_probability.length}.`
+      `Insufficient weather data. Needed ${offsetHours + 1} hours, got ${
+        weather.hourly.precipitation_probability.length
+      }.`
     );
   }
 
+  const expectedRoundLength = 3;
+
+  const timesDuringRound = weather.hourly.precipitation_probability.slice(
+    offsetHours,
+    offsetHours + expectedRoundLength
+  );
+  const avg =
+    timesDuringRound.reduce((a, b) => a + b) / timesDuringRound.length;
+
   // Calculate the weather score
-  const result =
-    (100 - weather.hourly.precipitation_probability[offsetHours]) / 10;
+  const result = (100 - avg) / 10;
   console.log(`Weather score after ${offsetHours} hours: ${result}`);
   return result;
 }
@@ -249,6 +259,14 @@ function getUserLocation(): Point {
   return new Point(parseFloat(newLat), parseFloat(newLon));
 }
 
+function getDesiredCourseCount(): number {
+  const desiredCourseCount = parseInt(
+    (document.getElementById("desiredCourseCount") as HTMLInputElement).value
+  );
+
+  return Math.max(Math.min(desiredCourseCount, 20), 1);
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function nearestCourses(): Promise<void> {
   const loc = getUserLocation();
@@ -262,7 +280,7 @@ async function nearestCourses(): Promise<void> {
           (course.distanceAwayKm = distanceBetween(course.location, loc))
       );
       courses.sort((c1, c2) => c1.distanceAwayKm - c2.distanceAwayKm);
-      const n = 10;
+      const n = getDesiredCourseCount();
       courses = courses.slice(0, n);
 
       await Promise.all(
@@ -306,7 +324,7 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
     c3.innerHTML = (course.distanceAwayKm * kmToMile).toFixed(1);
 
     const c4 = newRow.insertCell();
-    c4.innerHTML = course.getWeatherScore().toString();
+    c4.innerHTML = course.getWeatherScore().toFixed(1);
   }
 }
 
