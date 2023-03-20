@@ -1,70 +1,71 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-</head>
+  <head>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  </head>
 
-<body>
-  <script>0</script>
-  <h1>Forecaster's Edge</h1><br>
-  <label >Current Latitude, Longitude: </label><br>
-  
-  <input type="text" id="userLatLon" value="" onchange="onLatLonUpdated()">
-  
-  <br>
-  <label for="hourSelect"> What time will the round start: </label>
-  <br>
+  <body>
+    <script>0</script>
+    <h1>Forecaster's Edge</h1><br>
 
-  <select name="startTime" id="hourSelect">
-    <option value="15">3:00 PM</option>
-    <option value="16">4:00 PM</option>
-    <option value="17">5:00 PM</option>
-    <option value="18">6:00 PM</option>
-    <option value="19">7:00 PM</option>
-    <option value="20">8:00 PM</option>
-    <option value="21">9:00 PM</option>
-    <option value="22">10:00 PM</option>
-    <option value="23">11:00 PM</option>
-    <option value="0">12:00 AM</option>
-    <option value="1">1:00 AM</option>
-    <option value="2">2:00 AM</option>
-    <option value="3">3:00 AM</option>
-    <option value="4">4:00 AM</option>
-    <option value="5">5:00 AM</option>
-    <option value="6">6:00 AM</option>
-    <option value="7">7:00 AM</option>
-    <option value="8">8:00 AM</option>
-    <option value="9">9:00 AM</option>
-    <option value="10">10:00 AM</option>
-    <option value="11">11:00 AM</option>
-    <option value="12">12:00 PM</option>
-    <option value="13">1:00 PM</option>
-    <option value="14">2:00 PM</option>
-  </select>
+    <p>
+    <label >Current Latitude, Longitude: </label>
+    <input type="text" id="userLatLon" value="" onchange="onLatLonUpdated()">
 
-  <p>Fetch weather for the nearest <input type="text" id="desiredCourseCount" value="10" title="Enter a number between 1 and 20"> courses</p>
-  <button onclick="nearestCourses()">Show Nearby Courses</button>
-  <br>
-   <table id="nearbyCourses">
-  <thead>
-    <th>Course name</th>
-    <th>Number of Holes</th>
-    <th>Approximate Distance Away (miles)</th>
-    <th>Weather Score (1-10)</th>
-  </thead>
-  <tbody>
-  <tr>
-  </tr>
-  </tbody>
-</table> 
-<script src="./dist/weather.js"></script>
-<footer>
-  <p>  
-    Powered by the <a href="https://open-meteo.com/">Open-Meteo</a> Weather API
-  </p>
-</footer>
-</body>
+    <label for="hourSelect"> What time will the round start: </label>
+    <select name="startTime" id="hourSelect">
+      <option value="0">12:00 AM</option>
+      <option value="1">1:00 AM</option>
+      <option value="2">2:00 AM</option>
+      <option value="3">3:00 AM</option>
+      <option value="4">4:00 AM</option>
+      <option value="5">5:00 AM</option>
+      <option value="6">6:00 AM</option>
+      <option value="7">7:00 AM</option>
+      <option value="8">8:00 AM</option>
+      <option value="9">9:00 AM</option>
+      <option value="10">10:00 AM</option>
+      <option value="11">11:00 AM</option>
+      <option value="12">12:00 PM</option>
+      <option value="13">1:00 PM</option>
+      <option value="14">2:00 PM</option>
+      <option value="15">3:00 PM</option>
+      <option value="16">4:00 PM</option>
+      <option value="17">5:00 PM</option>
+      <option value="18" selected="selected">6:00 PM</option>
+      <option value="19">7:00 PM</option>
+      <option value="20">8:00 PM</option>
+      <option value="21">9:00 PM</option>
+      <option value="22">10:00 PM</option>
+      <option value="23">11:00 PM</option>
+    </select>
+    <br>
+    <label for="desiredCourseCount" id="courseCountLabel">Choose how many nearby courses to show:</label>
+    <input type="text" id="desiredCourseCount" value="10" title="Enter a number between 1 and 20">
+    <button onclick="nearestCourses()">Show Nearby Courses</button>
+    <br>
+    <table id="nearbyCourses">
+      <thead>
+        <th>Course name</th>
+        <th>Number of Holes</th>
+        <th>Approximate Distance Away (miles)</th>
+        <th>Weather Score (1-10)</th>
+      </thead>
+      <tbody>
+        <tr>
+        </tr>
+      </tbody>
+    </table> 
+    </p>
+    <script src="./dist/weather.js"></script>
+    <footer>
+      <p>  
+      Powered by the <a href="https://open-meteo.com/">Open-Meteo</a> Weather API
+      </p>
+    </footer>
+  </body>
 </html>
 

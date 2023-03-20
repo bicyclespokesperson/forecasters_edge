@@ -1,16 +1,104 @@
 body {
-  background-color: lightgreen;
-}
-td, th {
-  text-align: center;
-  text-align: center;
-  border: 1px solid darkblue;
-  padding: 5px;
+  width: 100%;
+  font-size: 20px;
 }
 
-#nearbyCourses {
+h1 {
+  text-align: center;
+  font-size: 2em;
+}
+
+label {
+  display: block;
+  margin-top: 1em 0;
+  margin-bottom: 0.5em 0;
+}
+
+#courseCountLabel {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+input[type=text] {
+  box-sizing: border-box;
+  padding: 0.5em;
+  margin-bottom: 1em;
+}
+
+select {
+  display: block;
+  margin: 0 auto;
+}
+
+button {
+  display: block;
+  margin: 0 0 1em 0;
+  padding: 0.5em 1em;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+select,
+button {
+  float: left;
+  clear: both;
+  margin-right: 1em;
+  font-size: inherit;
+}
+
+table {
+  width: 100%;
   border-collapse: collapse;
-  border: 1px solid darkblue;
-  border-spacing: 5px;
+  margin-top: 1em;
 }
 
+thead {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+}
+
+td, th {
+  border: 1px solid black;
+  padding: 0.5em;
+  text-align: center;
+}
+
+tr:first-child td {
+  font-weight: bold;
+}
+
+footer {
+  text-align: center;
+  margin-top: 1em;
+  font-size: 0.8em;
+}
+
+#userLatLon, #desiredCourseCount {
+  width: calc(100% - 200px);
+  max-width: 300px;
+  font-size: inherit;
+}
+
+p input {
+  width: auto;
+  display: inline-block;
+  margin-left: 5px;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  border: 1px solid #aaa;
+}
+
+p button {
+  margin-left: 10px;
+}
+
+#hourSelect, p {
+  float: left;
+  clear: left;
+}
