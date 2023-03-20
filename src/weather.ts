@@ -361,7 +361,7 @@ async function pageInit(): Promise<void> {
     })
     .catch((_err) => {
       (document.getElementById("userLatLon") as HTMLInputElement).value =
-        new Point(45, -122).toString();
+        new Point(33.6458, -82.2888).toString();
     });
 }
 
