@@ -11,7 +11,7 @@
     "build-dev": "parcel build ./index.html --no-optimize --public-url ./ && cp -r ./data ./dist/",
     "prebuild": "shx rm -rf dist/*",
     "build": "parcel build ./index.html --public-url ./ && cp -r ./data ./dist/",
-    "push-gh-pages": " # push-dir --dir=dist --branch=gh-pages --cleanup --verbose"
+    "push-gh-pages": "push-dir --dir=dist --branch=gh-pages --cleanup --verbose"
   },
   "author": "Jeremy Sigrist",
   "license": "ISC",
