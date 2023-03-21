@@ -8,7 +8,7 @@ import csv
 def main():
 
     courses_filename = './data/disc_golf_usa.csv'
-    postal_codes_filename = './data/zip_code_to_from_lat_long.txt'
+    postal_codes_filename = '../data/zipcode_lat_lon.csv'
     courses_with_postal_codes_filename = './usa_courses.csv'
 
     to_lat_lon = {}

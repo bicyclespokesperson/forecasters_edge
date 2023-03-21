@@ -2,22 +2,29 @@
   "name": "forecasters-edge",
   "version": "0.0.1",
   "description": "Show the nearby disc golf courses with the best weather",
-  "main": "index.js",
+  "default": "index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc",
-    "start": "python3 -m http.server",
-    "lint": "eslint ./src/* --fix && prettier -w ./src/*"
+    "lint": "npx tsc --noEmit && eslint ./src/* --fix && prettier -w ./src/*",
+    "start": "parcel ./index.html",
+    "prebuild-dev": "shx rm -rf dist/*",
+    "build-dev": "parcel build ./index.html --no-optimize --public-url ./ && cp -r ./data ./dist/",
+    "prebuild": "shx rm -rf dist/*",
+    "build": "parcel build ./index.html --public-url ./ && cp -r ./data ./dist/",
+    "push-gh-pages": " # push-dir --dir=dist --branch=gh-pages --cleanup --verbose"
   },
   "author": "Jeremy Sigrist",
   "license": "ISC",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.55.0",
+    "cssnano": "^5.1.15",
     "eslint": "^8.36.0",
     "eslint-config-standard-with-typescript": "^34.0.1",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-n": "^15.6.1",
     "eslint-plugin-promise": "^6.1.1",
+    "postcss": "^8.4.21",
+    "shx": "^0.3.2",
     "typescript": "^5.0.2"
   },
   "dependencies": {

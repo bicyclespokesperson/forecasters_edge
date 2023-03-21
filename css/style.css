@@ -8,14 +8,28 @@
 @media (prefers-color-scheme: dark) {
     body {
         background-color: black;
-        color: white;
+        color: lightgrey;
+    }
+    a {
+      color: #627d98;
+    }
+    a:visited {
+      color: #616e7c;
     }
 }
 
 
 body {
-  width: 100%;
+  width: 99%;
   font-size: 20px;
+  font-family: 'Open Sans', Helvetica, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 100vw;
 }
 
 h1 {
@@ -38,11 +52,15 @@ input[type=text] {
   box-sizing: border-box;
   padding: 0.5em;
   margin-bottom: 1em;
+  background-color: inherit;
+  color: inherit
 }
 
 select {
   display: block;
   margin: 0 auto;
+  background-color: inherit;
+  color: inherit;
 }
 
 button {
@@ -51,7 +69,7 @@ button {
   padding: 0.5em 1em;
   border: none;
   background-color: #007bff;
-  color: white;
+  color: inherit;
   font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
@@ -73,7 +91,7 @@ table {
 
 thead {
   background-color: #007bff;
-  color: white;
+  color: inherit;
   font-weight: bold;
 }
 
@@ -83,12 +101,8 @@ td, th {
   text-align: center;
 }
 
-tr:first-child td {
-  font-weight: bold;
-}
-
 footer {
-  text-align: center;
+  text-align: left;
   margin-top: 1em;
   font-size: 0.8em;
 }

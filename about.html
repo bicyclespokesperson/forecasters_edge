@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html>
+
+  <head>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  </head>
+
+  <body>
+    <h1>Forecaster's Edge</h1><br>
+    This site displays nearby disc golf courses and sorts them by the best weather conditions. Useful for deciding 
+    on a course to play later in the day.
+    <p>
+    <h3>Location Input</h3>
+    Please enter either a ZIP Code (example: 12345), or a latitude, longitude coordinate pair (example: 12.345, -123.456).
+    <br>
+    <h3>Weather Score</h3>
+    The weather score goes from 1 to 10, with 1 representing terrible weather 
+    and 10 representing perfect weather. It roughly corresponds to the inverse 
+    of the chance of precipitation; e.g. a course with a 70% chance of rain 
+    will have a score of 3. The score is lowered if courses are too windy, 
+    too hot, or too cold. 
+    <br>
+    <h3>Courses</h3>
+    This site includes courses located in the USA that have at least 18 holes.
+    <br>
+    <h3>Timezones</h3>
+    The time selected is assumed to be in the course's local timezone. This means
+    the weather scores shown in the table aren't guaranteed to be at the same time 
+    if the table includes courses in multiple timezones.
+    </p>
+
+    <footer>
+      <p>  
+      <a href="index.html">Main site</a><br>
+      Powered by the <a href="https://open-meteo.com/">Open-Meteo</a> Weather API
+      </p>
+    </footer>
+  </body>
+</html>

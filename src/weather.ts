@@ -1,6 +1,10 @@
 const mockWeatherRequests = false;
 
-const maxDecimalPlaces = 4;
+const kmToMile = 0.621371;
+const maxDecimalPlaces = 3;
+
+const weatherPool: Array<[Point, WeatherResponse]> = [];
+const zipcodeLocations = new Map<string, Point>();
 
 class WeatherResponse {
   latitude: number;
@@ -130,20 +134,42 @@ function calcWeatherScore(weather: WeatherResponse): number {
 
   const expectedRoundLength = 3;
 
-  const timesDuringRound = weather.hourly.precipitation_probability.slice(
-    offsetHours,
-    offsetHours + expectedRoundLength
-  );
-  const avg =
-    timesDuringRound.reduce((a, b) => a + b) / timesDuringRound.length;
+  const avgValue = (arr: number[]): number => {
+    const duringRound = arr.slice(
+      offsetHours,
+      offsetHours + expectedRoundLength
+    );
+    return duringRound.reduce((a, b) => a + b) / duringRound.length;
+  };
+
+  const precip = avgValue(weather.hourly.precipitation_probability);
+  const temperature = avgValue(weather.hourly.temperature_2m);
+  const windSpeed = avgValue(weather.hourly.windspeed_10m) * kmToMile;
+
+  // Slight penalty if the temperature isn't in this range
+  const minBestTemperatureF = 48;
+  const maxBestTemperatureF = 90;
+  const maxBestWindSpeedMPH = 30;
+
+  const precipScore = (100 - precip) / 10;
+  const tempPenalty =
+    (Math.max(minBestTemperatureF - temperature, 0) +
+      Math.max(temperature - maxBestTemperatureF, 0)) /
+    3;
+
+  const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
+  const result = Math.max(precipScore - tempPenalty - windPenalty, 1);
 
   // Calculate the weather score
-  const result = (100 - avg) / 10;
-  console.log(`Weather score after ${offsetHours} hours: ${result}`);
+  console.log(
+    `Weather score after ${offsetHours} hours: ${precipScore.toFixed(
+      2
+    )} - ${tempPenalty.toFixed(2)} - ${windPenalty.toFixed(
+      2
+    )} = ${result.toFixed(2)}`
+  );
   return result;
 }
-
-const weatherPool: Array<[Point, WeatherResponse]> = [];
 
 async function fetchWeather(loc: Point): Promise<WeatherResponse> {
   const timezone = "auto";
@@ -160,6 +186,7 @@ async function fetchWeather(loc: Point): Promise<WeatherResponse> {
     console.log(`Returned cached weather report for ${loc.toString()}`);
     return existing[1];
   }
+  console.log(`Fetching weather for ${loc.toString()}`);
 
   const weather: WeatherResponse = await (async () => {
     if (mockWeatherRequests) {
@@ -194,19 +221,19 @@ function countDecimalPlaces(n: string): number {
   return parts[1].length;
 }
 
-// TODO: Validation (maybe set textbox background to red for bad data)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function onLatLonUpdated(): void {
+function onLocationUpdated(): void {
   const inputBox = document.getElementById("userLatLon") as HTMLInputElement;
 
-  const [newLat, newLon] = inputBox.value.split(",");
-  const p = new Point(parseFloat(newLat), parseFloat(newLon));
-
-  if (
-    countDecimalPlaces(newLat) > maxDecimalPlaces ||
-    countDecimalPlaces(newLon) > maxDecimalPlaces
-  ) {
-    inputBox.value = p.toString();
+  if (inputBox.value.includes(",")) {
+    const [newLat, newLon] = inputBox.value.split(",");
+    const p = new Point(parseFloat(newLat), parseFloat(newLon));
+    if (
+      countDecimalPlaces(newLat) > maxDecimalPlaces ||
+      countDecimalPlaces(newLon) > maxDecimalPlaces
+    ) {
+      inputBox.value = p.toString();
+    }
   }
 }
 
@@ -252,11 +279,72 @@ async function getBrowserLocation(): Promise<Point> {
   });
 }
 
-function getUserLocation(): Point {
-  const [newLat, newLon] = (
-    document.getElementById("userLatLon") as HTMLInputElement
-  ).value.split(",");
-  return new Point(parseFloat(newLat), parseFloat(newLon));
+async function fetchZipcodeDataset() {
+  const filepath = "data/zipcode_lat_lon.csv";
+  void (await fetch(filepath)
+    .then(async (response) => await response.text())
+    .then((contents) => contents.split("\n"))
+    .then((lines) => {
+      lines.map((line) => {
+        const [zipcode, lat, lon] = line.split(",");
+        zipcodeLocations.set(
+          zipcode,
+          new Point(parseFloat(lat), parseFloat(lon))
+        );
+      });
+    }));
+}
+
+async function getUserLocation(): Promise<Point | undefined> {
+  const locationInputBox = document.getElementById(
+    "userLatLon"
+  ) as HTMLInputElement;
+
+  let result: Point | undefined = undefined;
+  try {
+    let locationInput = locationInputBox.value;
+
+    if (locationInput === "") {
+      throw new Error("No location provided");
+    }
+
+    if (locationInput.includes(",")) {
+      const [newLat, newLon] = locationInput.split(",");
+      const p = new Point(parseFloat(newLat), parseFloat(newLon));
+      if (isNaN(p.lat) || isNaN(p.lon)) {
+        throw new Error("Invalid lat/lon coordinate");
+      }
+
+      result = p;
+    } else {
+      // Remove suffix from zipcodes of the form 12345-4545
+      if (locationInput.includes("-")) {
+        locationInput = locationInput.substring(0, locationInput.indexOf("-"));
+      }
+
+      if (zipcodeLocations.size === 0) {
+        await fetchZipcodeDataset();
+      }
+
+      result = zipcodeLocations.get(locationInput);
+      if (!result) {
+        throw new Error(`Unknown zipcode: ${result}`);
+      }
+    }
+  } catch (error: unknown) {
+    console.error(error);
+  }
+
+  if (result === undefined) {
+    locationInputBox.style.border = "none";
+    locationInputBox.style.outline = "2px solid red";
+    locationInputBox.style.borderRadius = "5px";
+  } else {
+    locationInputBox.style.border = "";
+    locationInputBox.style.outline = "";
+    locationInputBox.style.borderRadius = "";
+  }
+  return result;
 }
 
 function getDesiredCourseCount(): number {
@@ -269,7 +357,11 @@ function getDesiredCourseCount(): number {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function nearestCourses(): Promise<void> {
-  const loc = getUserLocation();
+  const loc = await getUserLocation();
+  if (!loc) {
+    return;
+  }
+
   console.log(`Determining weather at courses near ${loc.toString()}`);
 
   void fetchCourses()
@@ -286,7 +378,6 @@ async function nearestCourses(): Promise<void> {
       await Promise.all(
         courses.map(async (course) => {
           await fetchWeather(course.location).then((weather) => {
-            console.log(`Got weather for: ${course.name}`);
             course.setWeatherScore(calcWeatherScore(weather));
           });
         })
@@ -300,8 +391,6 @@ async function nearestCourses(): Promise<void> {
 }
 
 function updateCoursesTable(courses: DiscGolfCourse[]): void {
-  const kmToMile = 0.621371;
-
   const table = document
     .getElementById("nearbyCourses")
     ?.getElementsByTagName("tbody")[0];
@@ -314,17 +403,15 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
 
   for (const course of courses) {
     const newRow = table.insertRow();
-    const c1 = newRow.insertCell();
-    c1.innerHTML = course.name;
+    newRow.insertCell().innerHTML = course.name;
 
-    const c2 = newRow.insertCell();
-    c2.innerHTML = course.numHoles.toFixed(0);
+    newRow.insertCell().innerHTML = course.getWeatherScore().toFixed(1);
 
-    const c3 = newRow.insertCell();
-    c3.innerHTML = (course.distanceAwayKm * kmToMile).toFixed(1);
+    newRow.insertCell().innerHTML = (course.distanceAwayKm * kmToMile).toFixed(
+      1
+    );
 
-    const c4 = newRow.insertCell();
-    c4.innerHTML = course.getWeatherScore().toFixed(1);
+    newRow.insertCell().innerHTML = course.numHoles.toFixed(0);
   }
 }
 
@@ -344,8 +431,8 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
 
   const courses: Promise<DiscGolfCourse[]> = fetch(filePath)
     .then(async (response) => await response.text())
-    .then((data) => {
-      const lines = data.split("\n");
+    .then((contents) => {
+      const lines = contents.split("\n");
       lines.shift();
       return lines.map(toCourse);
     });
@@ -354,15 +441,9 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
 }
 
 async function pageInit(): Promise<void> {
-  await getBrowserLocation()
-    .then((loc) => {
-      (document.getElementById("userLatLon") as HTMLInputElement).value =
-        loc.toString();
-    })
-    .catch((_err) => {
-      (document.getElementById("userLatLon") as HTMLInputElement).value =
-        new Point(33.6458, -82.2888).toString();
-    });
+  (document.getElementById("userLatLon") as HTMLInputElement).value = (
+    await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
+  ).toString();
 }
 
 void pageInit();

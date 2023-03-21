@@ -12,8 +12,8 @@
     <h1>Forecaster's Edge</h1><br>
 
     <p>
-    <label >Current Latitude, Longitude: </label>
-    <input type="text" id="userLatLon" value="" onchange="onLatLonUpdated()">
+    <label >ZIP Code (or Latitude, Longitude coordinates): </label>
+    <input type="text" id="userLatLon" value="" onchange="onLocationUpdated()" autocomplete="off" title="Enter a ZIP Code or latitude/longitude coordinates">
 
     <label for="hourSelect"> What time will the round start: </label>
     <select name="startTime" id="hourSelect">
@@ -50,9 +50,9 @@
     <table id="nearbyCourses">
       <thead>
         <th>Course name</th>
-        <th>Number of Holes</th>
-        <th>Approximate Distance Away (miles)</th>
         <th>Weather Score (1-10)</th>
+        <th>Approximate Distance Away (miles)</th>
+        <th>Number of Holes</th>
       </thead>
       <tbody>
         <tr>
@@ -60,9 +60,10 @@
       </tbody>
     </table> 
     </p>
-    <script src="./dist/weather.js"></script>
+    <script src="./src/weather.ts"></script>
     <footer>
       <p>  
+      <a href="about.html">About Forecaster's Edge</a><br>
       Powered by the <a href="https://open-meteo.com/">Open-Meteo</a> Weather API
       </p>
     </footer>
