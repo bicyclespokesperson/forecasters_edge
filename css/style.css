@@ -3,6 +3,9 @@
         background-color: white;
         color: black;
     }
+    td, th {
+      border: 1px solid black;
+    }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -15,6 +18,15 @@
     }
     a:visited {
       color: #616e7c;
+    }
+    th {
+      border-top: 1px solid #007bff;
+      border-bottom: 1px solid #007bff;
+      border-left: 1px solid #212121;
+      border-right: 1px solid #212121;
+    }
+    td {
+      border: 1px solid #212121;
     }
 }
 
@@ -45,12 +57,12 @@ label {
 
 #courseCountLabel {
   margin-top: 1em;
-  margin-bottom: 0.5em;
 }
 
 input[type=text] {
   box-sizing: border-box;
   padding: 0.5em;
+  margin-left: 5px;
   margin-bottom: 1em;
   background-color: inherit;
   color: inherit
@@ -65,7 +77,8 @@ select {
 
 button {
   display: block;
-  margin: 0 0 1em 0;
+  margin: 0;
+  margin-bottom: 1em;
   padding: 0.5em 1em;
   border: none;
   background-color: #007bff;
@@ -75,13 +88,33 @@ button {
   cursor: pointer;
 }
 
-select,
-button {
+select, button {
   float: left;
   clear: both;
   margin-right: 1em;
+  margin-left: 10px;
   font-size: inherit;
 }
+
+#userLatLon, #desiredCourseCount {
+  width: calc(100% - 200px);
+  max-width: 300px;
+  font-size: inherit;
+}
+
+p {
+  margin-left: 10px;
+}
+
+p input {
+  width: auto;
+  display: inline-block;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  border: 1px solid #aaa;
+}
+
 
 table {
   width: 100%;
@@ -96,7 +129,6 @@ thead {
 }
 
 td, th {
-  border: 1px solid black;
   padding: 0.5em;
   text-align: center;
 }
@@ -107,25 +139,6 @@ footer {
   font-size: 0.8em;
 }
 
-#userLatLon, #desiredCourseCount {
-  width: calc(100% - 200px);
-  max-width: 300px;
-  font-size: inherit;
-}
-
-p input {
-  width: auto;
-  display: inline-block;
-  margin-left: 5px;
-  font-size: inherit;
-  font-family: inherit;
-  line-height: inherit;
-  border: 1px solid #aaa;
-}
-
-p button {
-  margin-left: 10px;
-}
 
 #hourSelect, p {
   float: left;

@@ -96,7 +96,7 @@ class DiscGolfCourse {
   }
 }
 
-function calcWeatherScore(weather: WeatherResponse): number {
+function calcWeatherScore(weather: WeatherResponse, name?: string): number {
   // Weather start time is in local time based on the lat/lon of the request
   const weatherStartTime = new Date(weather.hourly.time[0]);
 
@@ -119,7 +119,7 @@ function calcWeatherScore(weather: WeatherResponse): number {
     return roundStartTime;
   })();
 
-  // Calculate how far into the hours array to look for the forecasted hourly weather
+  // Calculate how far into the hours array to look for the forecasted hourly weather.
   const offsetHours = Math.floor(
     (roundStartTime.valueOf() - weatherStartTime.valueOf()) / (1000 * 60 * 60)
   );
@@ -134,39 +134,58 @@ function calcWeatherScore(weather: WeatherResponse): number {
 
   const expectedRoundLength = 3;
 
-  const avgValue = (arr: number[]): number => {
-    const duringRound = arr.slice(
-      offsetHours,
-      offsetHours + expectedRoundLength
-    );
+  // isPreceeding = true means that the value is for the previous hour, not the instant value.
+  // For example, since total precipitation is for the previous hour, we want arr[7:00] for a round
+  // that starts at 6:00, since that value is how much it is expected to rain between 6:00 and 7:00.
+  const avgValue = (arr: number[], isPreceeding: boolean): number => {
+    const offset = Math.min(offsetHours + (isPreceeding ? 1 : 0), 23);
+    const duringRound = arr.slice(offset, offset + expectedRoundLength);
     return duringRound.reduce((a, b) => a + b) / duringRound.length;
   };
 
-  const precip = avgValue(weather.hourly.precipitation_probability);
-  const temperature = avgValue(weather.hourly.temperature_2m);
-  const windSpeed = avgValue(weather.hourly.windspeed_10m) * kmToMile;
+  const precip = avgValue(weather.hourly.precipitation, true);
+  const precipProbability = avgValue(
+    weather.hourly.precipitation_probability,
+    true
+  );
+  const temperature = avgValue(weather.hourly.temperature_2m, false);
+  const windSpeed = avgValue(weather.hourly.windspeed_10m, true) * kmToMile;
 
   // Slight penalty if the temperature isn't in this range
   const minBestTemperatureF = 48;
   const maxBestTemperatureF = 90;
   const maxBestWindSpeedMPH = 30;
 
-  const precipScore = (100 - precip) / 10;
+  // This is the probability of 0.1mm of rain. This means it's too high,
+  // squaring the percentage gives a better estimate.
+  const precipProbabilityScore =
+    (1 - Math.pow(precipProbability / 100, 2)) * 10;
+
+  // Any precipitation means there will be substantial rain
+  // TODO: Maybe there should be some sort of bonus for a 0 precip score
+  const precipScore = precip === 0 ? 10 : Math.max(1, 6 - 10 * precip);
   const tempPenalty =
     (Math.max(minBestTemperatureF - temperature, 0) +
       Math.max(temperature - maxBestTemperatureF, 0)) /
     3;
 
   const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
-  const result = Math.max(precipScore - tempPenalty - windPenalty, 1);
+  const result = Math.max(
+    Math.min(precipScore, precipProbabilityScore) - tempPenalty - windPenalty,
+    1
+  );
 
   // Calculate the weather score
   console.log(
-    `Weather score after ${offsetHours} hours: ${precipScore.toFixed(
+    `Weather score ${offsetHours} hours after midnight for ${name}: min((${precipScore.toFixed(
       2
-    )} - ${tempPenalty.toFixed(2)} - ${windPenalty.toFixed(
+    )} precip score), (${precipProbabilityScore.toFixed(
       2
-    )} = ${result.toFixed(2)}`
+    )} precip probability score)) - (${tempPenalty.toFixed(
+      2
+    )} temperature score) - (${windPenalty.toFixed(
+      2
+    )} wind score) = ${result.toFixed(2)}`
   );
   return result;
 }
@@ -203,8 +222,7 @@ async function fetchWeather(loc: Point): Promise<WeatherResponse> {
 }
 
 async function fetchWeatherMock(_p: Point): Promise<WeatherResponse> {
-  // const filePath = "data/sample_weather_response.json";
-  const filePath = "data/sample_weather_response_2.json";
+  const filePath = "data/sample_weather_response_st_helens.json";
   return await fetch(filePath)
     .then(async (response) => await response.text())
     .then(JSON.parse)
@@ -352,7 +370,9 @@ function getDesiredCourseCount(): number {
     (document.getElementById("desiredCourseCount") as HTMLInputElement).value
   );
 
-  return Math.max(Math.min(desiredCourseCount, 20), 1);
+  const minCourses = 1;
+  const maxCourses = 20;
+  return Math.max(Math.min(desiredCourseCount, maxCourses), minCourses);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -378,7 +398,7 @@ async function nearestCourses(): Promise<void> {
       await Promise.all(
         courses.map(async (course) => {
           await fetchWeather(course.location).then((weather) => {
-            course.setWeatherScore(calcWeatherScore(weather));
+            course.setWeatherScore(calcWeatherScore(weather, course.name));
           });
         })
       );
