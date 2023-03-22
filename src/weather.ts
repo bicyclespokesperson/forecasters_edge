@@ -66,8 +66,12 @@ class Point {
   }
 }
 
+class WeatherScore {
+  constructor(public score: number, public summary: string) {}
+}
+
 class DiscGolfCourse {
-  private weatherScore = 1;
+  private weatherScore: WeatherScore | undefined = undefined;
 
   public distanceAwayKm = NaN;
 
@@ -78,14 +82,14 @@ class DiscGolfCourse {
     public location: Point
   ) {}
 
-  public setWeatherScore(weatherScore: number): void {
-    if (weatherScore < 0 || weatherScore > 10) {
-      throw new Error("Weather score must be between 0 and 10");
-    }
+  public setWeatherScore(weatherScore: WeatherScore): void {
     this.weatherScore = weatherScore;
   }
 
-  public getWeatherScore(): number {
+  public getWeatherScore(): WeatherScore {
+    if (!this.weatherScore) {
+      throw new Error(`Weather score undefined for ${this.name}`);
+    }
     return this.weatherScore;
   }
 
@@ -96,7 +100,7 @@ class DiscGolfCourse {
   }
 }
 
-function calcWeatherScore(weather: WeatherResponse, name?: string): number {
+function calcWeatherScore(weather: WeatherResponse): WeatherScore {
   // Weather start time is in local time based on the lat/lon of the request
   const weatherStartTime = new Date(weather.hourly.time[0]);
 
@@ -154,40 +158,44 @@ function calcWeatherScore(weather: WeatherResponse, name?: string): number {
   // Slight penalty if the temperature isn't in this range
   const minBestTemperatureF = 48;
   const maxBestTemperatureF = 90;
-  const maxBestWindSpeedMPH = 30;
+  const maxBestWindSpeedMPH = 25;
 
   // This is the probability of 0.1mm of rain. This means it's too high,
   // squaring the percentage gives a better estimate.
-  const precipProbabilityScore =
-    (1 - Math.pow(precipProbability / 100, 2)) * 10;
+  const precipProbabilityScore = (1 - Math.pow(precipProbability / 100, 2)) * 3;
 
   // Any precipitation means there will be substantial rain
-  // TODO: Maybe there should be some sort of bonus for a 0 precip score
-  const precipScore = precip === 0 ? 10 : Math.max(1, 6 - 10 * precip);
+  const precipScore = Math.max(7 - 2.5 * precip, 0);
   const tempPenalty =
     (Math.max(minBestTemperatureF - temperature, 0) +
       Math.max(temperature - maxBestTemperatureF, 0)) /
     3;
 
   const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
-  const result = Math.max(
-    Math.min(precipScore, precipProbabilityScore) - tempPenalty - windPenalty,
+  const score = Math.max(
+    precipScore + precipProbabilityScore - tempPenalty - windPenalty,
     1
   );
 
   // Calculate the weather score
-  console.log(
-    `Weather score ${offsetHours} hours after midnight for ${name}: min((${precipScore.toFixed(
-      2
-    )} precip score), (${precipProbabilityScore.toFixed(
-      2
-    )} precip probability score)) - (${tempPenalty.toFixed(
-      2
-    )} temperature score) - (${windPenalty.toFixed(
-      2
-    )} wind score) = ${result.toFixed(2)}`
-  );
-  return result;
+  const components = `precip (mm): ${precip.toFixed(
+    1
+  )}, precipProbability (%): ${precipProbability.toFixed(
+    1
+  )}, windSpeed (mph): ${windSpeed.toFixed(
+    1
+  )}, temperature (F): ${temperature.toFixed(1)}`;
+
+  const formula = `(${precipScore.toFixed(
+    1
+  )} precip score) + (${precipProbabilityScore.toFixed(
+    1
+  )} precip probability score) - (${tempPenalty.toFixed(
+    1
+  )} temperature score) - (${windPenalty.toFixed(
+    1
+  )} wind score) = ${score.toFixed(1)}`;
+  return new WeatherScore(score, components + "\n\n" + formula);
 }
 
 async function fetchWeather(loc: Point): Promise<WeatherResponse> {
@@ -398,12 +406,14 @@ async function nearestCourses(): Promise<void> {
       await Promise.all(
         courses.map(async (course) => {
           await fetchWeather(course.location).then((weather) => {
-            course.setWeatherScore(calcWeatherScore(weather, course.name));
+            course.setWeatherScore(calcWeatherScore(weather));
           });
         })
       );
 
-      courses.sort((c1, c2) => c2.getWeatherScore() - c1.getWeatherScore());
+      courses.sort(
+        (c1, c2) => c2.getWeatherScore().score - c1.getWeatherScore().score
+      );
 
       return courses;
     })
@@ -425,7 +435,11 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
     const newRow = table.insertRow();
     newRow.insertCell().innerHTML = course.name;
 
-    newRow.insertCell().innerHTML = course.getWeatherScore().toFixed(1);
+    //TODO: Change this from title to something supported on mobile. Ideas here:
+    // https://stackoverflow.com/questions/12539006/tooltips-for-mobile-browsers
+    const scoreCell = newRow.insertCell();
+    scoreCell.innerHTML = course.getWeatherScore().score.toFixed(1);
+    scoreCell.title = course.getWeatherScore().summary;
 
     newRow.insertCell().innerHTML = (course.distanceAwayKm * kmToMile).toFixed(
       1
