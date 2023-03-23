@@ -6,6 +6,10 @@
     td, th {
       border: 1px solid black;
     }
+    .more_info {
+      color: white;
+      background: #212121;
+    }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +31,10 @@
     }
     td {
       border: 1px solid #212121;
+    }
+    .more_info {
+      color: black;
+      background: silver;
     }
 }
 
@@ -140,3 +148,16 @@ footer {
   float: left;
   clear: left;
 }
+
+.more_info {
+  white-space: pre-line;
+  border-bottom: 1px dotted;
+  padding: 4px;
+  position: absolute;
+  top: inherit;
+  width: 20em;
+  height: auto;
+  z-index: auto;
+  margin-left: 20px;
+}
+

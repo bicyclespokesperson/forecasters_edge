@@ -1,4 +1,4 @@
-const mockWeatherRequests = false;
+const mockWeatherRequests = true;
 
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
@@ -439,11 +439,37 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
     // https://stackoverflow.com/questions/12539006/tooltips-for-mobile-browsers
     const scoreCell = newRow.insertCell();
     scoreCell.innerHTML = course.getWeatherScore().score.toFixed(1);
+    scoreCell.addEventListener("click", (event: Event) => {
+      const clickedCell = event.target as HTMLTableCellElement;
+
+      let shouldAdd = true;
+
+      // Make sure there are no visible more-info popups
+      for (let row of table.rows) {
+        for (let childCell of row.cells) {
+          const childElement = childCell.querySelector(".more_info");
+          if (childElement) {
+            childCell.removeChild(childElement);
+            shouldAdd = false;
+          }
+        }
+      }
+
+      if (shouldAdd) {
+        const span = document.createElement("span");
+        span.textContent = course.getWeatherScore().summary;
+        span.className = "more_info";
+        clickedCell.appendChild(span);
+      }
+    });
+
     scoreCell.title = course.getWeatherScore().summary;
 
-    newRow.insertCell().innerHTML = (course.distanceAwayKm * kmToMile).toFixed(
-      1
-    );
+    // Round to nearest 5, since the course locations are only accurate to the zipcode level.
+    // Change this if precise lat/lon for courses is added.
+    newRow.insertCell().innerHTML = (
+      Math.round((course.distanceAwayKm * kmToMile) / 5) * 5
+    ).toFixed(0);
 
     newRow.insertCell().innerHTML = course.numHoles.toFixed(0);
   }
