@@ -1,4 +1,4 @@
-const mockWeatherRequests = true;
+const mockWeatherRequests = false;
 
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
@@ -442,25 +442,13 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
     scoreCell.addEventListener("click", (event: Event) => {
       const clickedCell = event.target as HTMLTableCellElement;
 
-      let shouldAdd = true;
-
-      // Make sure there are no visible more-info popups
-      for (let row of table.rows) {
-        for (let childCell of row.cells) {
-          const childElement = childCell.querySelector(".more_info");
-          if (childElement) {
-            childCell.removeChild(childElement);
-            shouldAdd = false;
-          }
-        }
-      }
-
-      if (shouldAdd) {
+      if (!clearInfoPopups()) {
         const span = document.createElement("span");
         span.textContent = course.getWeatherScore().summary;
         span.className = "more_info";
         clickedCell.appendChild(span);
       }
+      event.stopPropagation();
     });
 
     scoreCell.title = course.getWeatherScore().summary;
@@ -473,6 +461,28 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
 
     newRow.insertCell().innerHTML = course.numHoles.toFixed(0);
   }
+}
+
+function clearInfoPopups(): boolean {
+
+  const table = document.getElementById("nearbyCourses")?.getElementsByTagName("tbody")[0];
+  if (table == null) {
+    return false;
+  }
+  
+  let removedAny = false;
+  // Make sure there are no visible more-info popups
+  for (let row of table.rows) {
+    for (let childCell of row.cells) {
+      const childElement = childCell.querySelector(".more_info");
+      if (childElement) {
+        childCell.removeChild(childElement);
+        removedAny = true;
+      }
+    }
+  }
+
+  return removedAny;
 }
 
 function toCourse(line: string): DiscGolfCourse {
@@ -501,6 +511,10 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
 }
 
 async function pageInit(): Promise<void> {
+  document.body.addEventListener('click', () => {
+    clearInfoPopups();
+  });
+  
   (document.getElementById("userLatLon") as HTMLInputElement).value = (
     await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
   ).toString();
