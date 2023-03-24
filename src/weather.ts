@@ -156,16 +156,17 @@ function calcWeatherScore(weather: WeatherResponse): WeatherScore {
   const windSpeed = avgValue(weather.hourly.windspeed_10m, true) * kmToMile;
 
   // Slight penalty if the temperature isn't in this range
-  const minBestTemperatureF = 48;
+  const minBestTemperatureF = 45;
   const maxBestTemperatureF = 90;
   const maxBestWindSpeedMPH = 25;
 
   // This is the probability of 0.1mm of rain. This means it's too high,
   // squaring the percentage gives a better estimate.
-  const precipProbabilityScore = (1 - Math.pow(precipProbability / 100, 2)) * 3;
+  const precipProbabilityScore =
+    (1 - Math.pow(precipProbability / 100, 2)) * 2.5;
 
   // Any precipitation means there will be substantial rain
-  const precipScore = Math.max(7 - 2.5 * precip, 0);
+  const precipScore = Math.max(7.5 - 2.7 * precip, 0);
   const tempPenalty =
     (Math.max(minBestTemperatureF - temperature, 0) +
       Math.max(temperature - maxBestTemperatureF, 0)) /
@@ -439,8 +440,6 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
     const newRow = table.insertRow();
     newRow.insertCell().innerHTML = course.name;
 
-    //TODO: Change this from title to something supported on mobile. Ideas here:
-    // https://stackoverflow.com/questions/12539006/tooltips-for-mobile-browsers
     const scoreCell = newRow.insertCell();
     scoreCell.innerHTML = course.getWeatherScore().score.toFixed(1);
     scoreCell.addEventListener("click", (event: Event) => {
