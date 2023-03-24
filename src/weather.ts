@@ -516,9 +516,8 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
 }
 
 async function pageInit(): Promise<void> {
-  document.body.addEventListener("click", () => {
-    clearInfoPopups();
-  });
+  document.addEventListener("click", clearInfoPopups);
+  document.addEventListener("touchStart", clearInfoPopups);
 
   (document.getElementById("userLatLon") as HTMLInputElement).value = (
     await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
