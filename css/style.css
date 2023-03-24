@@ -8,7 +8,7 @@
     }
     .more_info {
       color: white;
-      background: #212121;
+      background: #2b2b2b;
     }
 }
 
@@ -151,7 +151,7 @@ footer {
 
 .more_info {
   white-space: pre-line;
-  border-bottom: 1px dotted;
+  border: 1px dotted;
   padding: 4px;
   position: absolute;
   top: inherit;
@@ -159,5 +159,11 @@ footer {
   height: auto;
   z-index: auto;
   margin-left: 20px;
+  animation: fadeIn linear 0.15s;
+}
+
+@keyframes fadeIn {
+  0% {opacity:0;}
+  100% {opacity:1;}
 }
 
