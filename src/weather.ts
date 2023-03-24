@@ -206,13 +206,17 @@ async function fetchWeather(loc: Point): Promise<WeatherResponse> {
 
   // We don't need to fetch a new weather report if we already have one from nearby
   const sameWeatherThresholdKm = 20;
-  const existing = weatherPool.find((elem) => {
-    return distanceBetween(elem[0], loc) < sameWeatherThresholdKm;
-  });
-  if (existing !== undefined) {
-    console.log(`Returned cached weather report for ${loc.toString()}`);
-    return existing[1];
+
+  if (weatherPool.length > 0) {
+    const closestExisting = weatherPool.reduce((a, b) => {
+      return distanceBetween(a[0], loc) < distanceBetween(b[0], loc) ? a : b;
+    });
+    if (distanceBetween(loc, closestExisting[0]) < sameWeatherThresholdKm) {
+      console.log(`Returned cached weather report for ${loc.toString()}`);
+      return closestExisting[1];
+    }
   }
+
   console.log(`Fetching weather for ${loc.toString()}`);
 
   const weather: WeatherResponse = await (async () => {
@@ -464,16 +468,17 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
 }
 
 function clearInfoPopups(): boolean {
-
-  const table = document.getElementById("nearbyCourses")?.getElementsByTagName("tbody")[0];
+  const table = document
+    .getElementById("nearbyCourses")
+    ?.getElementsByTagName("tbody")[0];
   if (table == null) {
     return false;
   }
-  
+
   let removedAny = false;
   // Make sure there are no visible more-info popups
-  for (let row of table.rows) {
-    for (let childCell of row.cells) {
+  for (const row of table.rows) {
+    for (const childCell of row.cells) {
       const childElement = childCell.querySelector(".more_info");
       if (childElement) {
         childCell.removeChild(childElement);
@@ -511,10 +516,10 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
 }
 
 async function pageInit(): Promise<void> {
-  document.body.addEventListener('click', () => {
+  document.body.addEventListener("click", () => {
     clearInfoPopups();
   });
-  
+
   (document.getElementById("userLatLon") as HTMLInputElement).value = (
     await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
   ).toString();
