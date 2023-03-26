@@ -475,12 +475,13 @@ function clearInfoPopups(): boolean {
   }
 
   let removedAny = false;
-  // Make sure there are no visible more-info popups
   for (const row of table.rows) {
     for (const childCell of row.cells) {
-      const childElement = childCell.querySelector(".more_info");
+      const childElement = childCell.querySelector(".more_info") as HTMLElement;
       if (childElement) {
-        childCell.removeChild(childElement);
+        const duration_ms = 150;
+        childElement.style.animation = `fadeOut linear ${duration_ms}ms`;
+        setTimeout(() => { childCell.removeChild(childElement); }, duration_ms);
         removedAny = true;
       }
     }
