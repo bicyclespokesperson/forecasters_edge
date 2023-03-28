@@ -3,7 +3,7 @@ const mockWeatherRequests = false;
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
 
-const weatherPool: Array<[Point, WeatherResponse]> = [];
+const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
 const zipcodeLocations = new Map<string, Point>();
 
 class WeatherResponse {
@@ -206,21 +206,26 @@ async function fetchWeather(loc: Point): Promise<WeatherResponse> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=temperature_2m,precipitation_probability,precipitation,windspeed_10m&temperature_unit=fahrenheit&forecast_days=1&timezone=${timezone}`;
 
   // We don't need to fetch a new weather report if we already have one from nearby
-  const sameWeatherThresholdKm = 20;
+  const sameWeatherThresholdMiles = 10;
 
   if (weatherPool.length > 0) {
     const closestExisting = weatherPool.reduce((a, b) => {
       return distanceBetween(a[0], loc) < distanceBetween(b[0], loc) ? a : b;
     });
-    if (distanceBetween(loc, closestExisting[0]) < sameWeatherThresholdKm) {
-      console.log(`Returned cached weather report for ${loc.toString()}`);
+    const milesApart = distanceBetween(loc, closestExisting[0]) * kmToMile;
+    if (milesApart < sameWeatherThresholdMiles) {
+      console.log(
+        `Returned cached weather report for ${loc.toString()}. (${milesApart.toFixed(
+          1
+        )} miles away from ${closestExisting[0].toString()})`
+      );
       return closestExisting[1];
     }
   }
 
   console.log(`Fetching weather for ${loc.toString()}`);
 
-  const weather: WeatherResponse = await (async () => {
+  const weather: Promise<WeatherResponse> = (async () => {
     if (mockWeatherRequests) {
       return await fetchWeatherMock(loc);
     }
@@ -229,9 +234,9 @@ async function fetchWeather(loc: Point): Promise<WeatherResponse> {
       .then(async (response) => await response.json())
       .then((val) => new WeatherResponse(val));
   })();
-
   weatherPool.push([loc, weather]);
-  return weather;
+
+  return await weather;
 }
 
 async function fetchWeatherMock(_p: Point): Promise<WeatherResponse> {
@@ -481,7 +486,9 @@ function clearInfoPopups(): boolean {
       if (childElement) {
         const duration_ms = 150;
         childElement.style.animation = `fadeOut linear ${duration_ms}ms`;
-        setTimeout(() => { childCell.removeChild(childElement); }, duration_ms);
+        setTimeout(() => {
+          childCell.removeChild(childElement);
+        }, duration_ms);
         removedAny = true;
       }
     }
