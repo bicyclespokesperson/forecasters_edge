@@ -460,8 +460,7 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
 
     scoreCell.title = course.getWeatherScore().summary;
 
-    // Round to nearest 5, since the course locations are only accurate to the zipcode level.
-    // Change this if precise lat/lon for courses is added.
+    // Round to nearest 5, since the user's zipcode isn't very precise
     newRow.insertCell().innerHTML = (
       Math.round((course.distanceAwayKm * kmToMile) / 5) * 5
     ).toFixed(0);
