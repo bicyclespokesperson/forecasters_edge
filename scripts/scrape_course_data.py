@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
-import requests
+#import requests
 from bs4 import BeautifulSoup
 import re
 import time
 import random
 import os
 from itertools import tee
+
+COURSES_DIR = '/Users/jeremysigrist/Development/disc_golf_weather_forecast/forecasters-edge/scripts/data/all_courses/'
 
 def pairwise(iterable):
     """
@@ -60,62 +62,59 @@ class DiscGolfCourse:
         #TODO: More of these?
 
     def __str__(self) -> str:
-        attributes = [self.name, self.city, self.state, self.country, self.zipcode, str(self.numHoles), self.lat, self.lon]
+        attributes = [self.name, str(self.numHoles), self.lat, self.lon]
         return ','.join(attributes)
 
     def headers(self) -> str:
-        return 'Name, City, State, Country, ZIP Code, Number of holes, Latitude, Longitude'
+        return 'Name, Number of holes, Latitude, Longitude'
 
-def analyzeIndividualCourse(url: str) -> DiscGolfCourse:
-
-    fake_data_path = 'data/pdga_milo.html'
-    #fake_data_path = 'data/pdga_eco.html'
+def find_next_matching(tag, pattern, accessor):
     
-    contents = ''
-    if fake_data_path:
-        with open(fake_data_path, mode='r') as infile:
-            contents = infile.read()
-    else:
-        reqs = requests.get(url)
-        contents = reqs.text
+    counter = 0
+    while not re.match(pattern, accessor(tag)) and counter < 100:
+        counter += 1
+        tag = tag.next
+
+    return str(tag.string)
+
+
+def analyzeIndividualCourse(filename: str) -> DiscGolfCourse:
+
+    with open(os.path.join(COURSES_DIR, filename), mode='r') as infile:
+        contents = infile.read()
     
     course = DiscGolfCourse()
     
     soup = BeautifulSoup(contents, 'html.parser')
     f = lambda tag: tag.has_attr('class') and tag.string and 'og:title' in tag.string
-    course.name = soup.find_all(f)[0].next.next.next.next.next.next.string
+    #course.name = soup.find_all(f)[0].next.next.next.next.next.next.string
+    matches = soup.find_all(f)
+
+    if not matches:
+        f = lambda tag: tag.has_attr('class') and tag.string and 'og:title' in tag.string
+        matches = soup.find_all(f)
+    
+    course.name = find_next_matching(matches, r'^[A-Z].+', lambda tag: str(tag.contents)) #soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
     
     f = lambda tag: tag.has_attr('class') and tag.string and 'og:latitude' in tag.string
-    course.lat = soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
+    course.lat = find_next_matching(soup.find_all(f)[0], r'^[\d-.]+$', lambda tag: str(tag.contents)) #soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
     
     f = lambda tag: tag.has_attr('class') and tag.string and 'og:longitude' in tag.string
-    course.lon = soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
+    course.lon = find_next_matching(soup.find_all(f)[0], r'^[\d-.]+$', lambda tag: str(tag.contents)) #soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
     
-    f = lambda tag: tag.text and '12' in tag.text
-    #f = lambda tag: tag.text and 'Holes' in tag.text
-    a = [tag for tag in soup.find_all(f)]
-    a = [v for v in a if len(v.text) < 100]
-    print('\n'.join(str(a) for v in a))
-    print(len(a))
-    print('-------------------------------------------')
-    print(a[0])
-    v = a[0]
-    print(v)
-    for i in range(1, 40):
-        v = v.next
-        print(f'{i} {v}')
-    print('-------------------------------------------')
-    print(len(a))
-    
-    #course.name = ''
-    course.city = ''
-    course.state = ''
-    course.country = ''
-    course.zipcode = ''
-    course.numHoles = 18
-    #course.parkingLotLocation = ''
-    #course.firstTeeLocation = ''
+    f = lambda tag: tag.text and '# Holes' in tag.text
+    a = [tag for tag in soup.find_all(f) if len(tag.text) < 100]
 
+    course.numHoles = int(find_next_matching(a[0], r'[\d]+', lambda t: str(t.string)))
+    
+    v = a[0]
+    counter = 0
+    while not str(v.string).isdigit() and counter < 100:
+        counter += 1
+        v = v.next
+    if str(v.string).isdigit():
+        course.numHoles = int(str(v.string))
+    
     if ',' in course.name:
         print(f'Warning: comma in name of course {course.name}')
 
@@ -123,33 +122,34 @@ def analyzeIndividualCourse(url: str) -> DiscGolfCourse:
     
 
 def analyzeAllCourses():
-    with open('./data/course_urls.csv', mode='r') as infile:
-        course_urls = [line.strip() for line in infile.readlines()]
+    files = [f for f in os.listdir('./data/all_courses/') if f.endswith('.html')]
+    files.sort()
 
-        start = 0
-        end = 1 # len(course_urls)
-        counter = 0
-        courses = []
-        try:
-            for url in course_urls[start:end]:
-                courses.append(analyzeIndividualCourse(url))
-                #time.sleep(random.random() + 0.4) # Try not to get blocked
+    
+    start = 0
+    end = 1 # len(course_urls)
+    counter = 0
+    courses = []
+    try:
+        for f in files[start:end]:
+            courses.append(analyzeIndividualCourse(f))
+            #time.sleep(random.random() + 0.4) # Try not to get blocked
 
-                counter += 1
-        except BaseException as err:
-            print(f'Analyzed from {start} to {start + counter} of {len(course_urls)} courses before encountering error:\n')
-            print(err)
-            print()
+            counter += 1
+    except BaseException as err:
+        print(f'Analyzed from {start} to {start + counter} of {len(files)} courses before encountering error:\n')
+        print(err)
+        print()
 
 
-        outfile_path = 'data/usa_courses_full.csv'
-        include_headers = not os.path.isfile(outfile_path)
-        
-        with open(outfile_path, mode='a', encoding='utf8') as outfile:
-            if include_headers and courses:
-                outfile.write(courses[0].headers() + '\n')
-            outfile.writelines(f'{str(c)}\n' for c in courses)
-            print(f'Added {counter} course(s) to {outfile_path}')
+    outfile_path = 'data/usa_courses_full.csv'
+    include_headers = not os.path.isfile(outfile_path)
+    
+    with open(outfile_path, mode='a', encoding='utf8') as outfile:
+        if include_headers and courses:
+            outfile.write(courses[0].headers() + '\n')
+        outfile.writelines(f'{str(c)}\n' for c in courses)
+        print(f'Added {counter} course(s) to {outfile_path}')
             
 
 if __name__ == '__main__':
