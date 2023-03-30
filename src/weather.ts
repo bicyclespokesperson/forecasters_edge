@@ -77,7 +77,6 @@ class DiscGolfCourse {
 
   constructor(
     public name: string,
-    public city: string,
     public numHoles: number,
     public location: Point
   ) {}
@@ -94,9 +93,9 @@ class DiscGolfCourse {
   }
 
   public toString(): string {
-    return `${this.name},${this.city},${
-      this.numHoles
-    },${this.location.toString()},${this.weatherScore}`;
+    return `${this.name},${this.numHoles},${this.location.toString()},${
+      this.weatherScore
+    }`;
   }
 }
 
@@ -502,9 +501,8 @@ function toCourse(line: string): DiscGolfCourse {
   const sp = line.split(delimiter);
   return new DiscGolfCourse(
     sp[0],
-    sp[1],
-    parseInt(sp[5]),
-    new Point(parseFloat(sp[7]), parseFloat(sp[8]))
+    parseInt(sp[1]),
+    new Point(parseFloat(sp[2]), parseFloat(sp[3]))
   );
 }
 

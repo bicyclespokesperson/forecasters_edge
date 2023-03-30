@@ -48,6 +48,7 @@ def get_course_page_urls():
         courses.sort()
         outfile.writelines(f'{c}\n' for c in courses)
         print(f'Course urls saved to {outfile_name}')
+        print('Use download_all_files.sh and rename_all_files.sh to download/rename all of these')
 
 class DiscGolfCourse:
 
@@ -112,10 +113,9 @@ def analyzeIndividualCourse(filename: str) -> DiscGolfCourse:
 def analyzeAllCourses():
     files = [f for f in os.listdir('./data/all_courses/') if f.endswith('.html')]
     files.sort()
-
     
     start = 0
-    end = 1 # len(course_urls)
+    end = len(files)
     counter = 0
     courses = []
     try:
@@ -141,4 +141,7 @@ def analyzeAllCourses():
             
 
 if __name__ == '__main__':
+    start_time = time.time()
     analyzeAllCourses()
+    end_time = time.time()
+    print(f'Execution time: {end_time-start_time:.2f} seconds')
