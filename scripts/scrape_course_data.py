@@ -6,6 +6,7 @@ import re
 import time
 import random
 import os
+import requests
 from itertools import tee
 
 COURSES_DIR = '/Users/jeremysigrist/Development/disc_golf_weather_forecast/forecasters-edge/scripts/data/all_courses/'
@@ -56,7 +57,7 @@ class DiscGolfCourse:
         self.state: str = ''
         self.country: str = ''
         self.zipcode: str = ''
-        self.numHoles: int = 18
+        self.numHoles: int = -1
         self.lat: str = ''
         self.lon: str = ''
         #TODO: More of these?
@@ -86,34 +87,21 @@ def analyzeIndividualCourse(filename: str) -> DiscGolfCourse:
     course = DiscGolfCourse()
     
     soup = BeautifulSoup(contents, 'html.parser')
-    f = lambda tag: tag.has_attr('class') and tag.string and 'og:title' in tag.string
-    #course.name = soup.find_all(f)[0].next.next.next.next.next.next.string
-    matches = soup.find_all(f)
+    f = lambda tag: tag.has_attr('property') and 'og:title' in str(tag.get('property'))
+    tags = soup.find_all(f)
+    course.name = str(tags[0].get('content'))
 
-    if not matches:
-        f = lambda tag: tag.has_attr('class') and tag.string and 'og:title' in tag.string
-        matches = soup.find_all(f)
-    
-    course.name = find_next_matching(matches, r'^[A-Z].+', lambda tag: str(tag.contents)) #soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
-    
-    f = lambda tag: tag.has_attr('class') and tag.string and 'og:latitude' in tag.string
-    course.lat = find_next_matching(soup.find_all(f)[0], r'^[\d-.]+$', lambda tag: str(tag.contents)) #soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
-    
-    f = lambda tag: tag.has_attr('class') and tag.string and 'og:longitude' in tag.string
-    course.lon = find_next_matching(soup.find_all(f)[0], r'^[\d-.]+$', lambda tag: str(tag.contents)) #soup.find_all(f)[0].next.next.next.next.next.next.contents[0]
+    f = lambda tag: tag.has_attr('property') and 'og:latitude' in str(tag.get('property'))
+    tags = soup.find_all(f)
+    course.lat = str(tags[0].get('content'))
+
+    f = lambda tag: tag.has_attr('property') and 'og:longitude' in str(tag.get('property'))
+    tags = soup.find_all(f)
+    course.lon = str(tags[0].get('content'))
     
     f = lambda tag: tag.text and '# Holes' in tag.text
     a = [tag for tag in soup.find_all(f) if len(tag.text) < 100]
-
     course.numHoles = int(find_next_matching(a[0], r'[\d]+', lambda t: str(t.string)))
-    
-    v = a[0]
-    counter = 0
-    while not str(v.string).isdigit() and counter < 100:
-        counter += 1
-        v = v.next
-    if str(v.string).isdigit():
-        course.numHoles = int(str(v.string))
     
     if ',' in course.name:
         print(f'Warning: comma in name of course {course.name}')
