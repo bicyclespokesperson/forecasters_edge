@@ -1,4 +1,4 @@
-const mockWeatherRequests = false;
+const mockWeatherRequests = true;
 
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
@@ -426,7 +426,9 @@ async function nearestCourses(): Promise<void> {
 
       return courses;
     })
-    .then(updateCoursesTable);
+    .then(updateCoursesTable)
+  
+    updateLastLight(loc, 0); //TODO: UTC Offset
 }
 
 function updateCoursesTable(courses: DiscGolfCourse[]): void {
@@ -467,6 +469,41 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
 
     newRow.insertCell().innerHTML = course.numHoles.toFixed(0);
   }
+}
+
+function updateLastLight(loc: Point, offsetUtc: number) {
+  const lastLightParagraph = document.getElementById("lastLight");
+  if (lastLightParagraph === null) {
+    return;
+  }
+
+  let toRadians = Math.PI / 180;
+
+  const today = new Date();
+  const startOfYear = new Date(today.getFullYear(), 0, 0);
+  const diff = today.getTime() - startOfYear.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+
+  // See: https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+
+  let denom = 365; //TODO: 366 for leap years
+  let gamma = (2 * Math.PI / denom) * (dayOfYear - 1 + (today.getHours() - 12) / 24)
+  console.log(`gamma: ${gamma}`);
+  let eqtime = 229.18*(0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma))
+  console.log(`eqtime: ${eqtime}`);
+  let decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma) - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma) - 0.002697 * Math.cos(3 * gamma) + 0.00148 * Math.sin(3 * gamma)
+  console.log(`decl: ${decl}`);
+  let ha1 = Math.acos(Math.cos(90.833 * toRadians) / (Math.cos(loc.lat * toRadians) * Math.cos(decl)) - Math.tan(loc.lat * toRadians) * Math.tan(decl)) / toRadians;
+  console.log(`ha1: ${ha1}`);
+  let sunrise = 720 - 4 * (loc.lon + ha1) - eqtime;
+  console.log(`sunrise: ${sunrise}`);
+  let sunset = 720 - 4 * (loc.lon - ha1) - eqtime;
+  console.log(`sunset: ${sunset}`);
+
+  let sunsetTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), Math.floor(sunset / 60), sunset % 60);
+  const formattedTime = sunsetTime.toLocaleTimeString('en-US', {hour: 'numeric', minute: 'numeric', hour12: true});
+  lastLightParagraph.textContent = `Last light today: ${formattedTime}`
 }
 
 function clearInfoPopups(): boolean {
