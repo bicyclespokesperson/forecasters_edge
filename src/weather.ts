@@ -1,6 +1,6 @@
 import { getTimes } from "suncalc";
 
-const mockWeatherRequests = true;
+const mockWeatherRequests = false;
 
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
