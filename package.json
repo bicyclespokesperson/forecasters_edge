@@ -16,6 +16,7 @@
   "author": "Jeremy Sigrist",
   "license": "ISC",
   "devDependencies": {
+    "@types/suncalc": "^1.9.0",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "cssnano": "^5.1.15",
     "eslint": "^8.36.0",
@@ -25,6 +26,7 @@
     "eslint-plugin-promise": "^6.1.1",
     "postcss": "^8.4.21",
     "shx": "^0.3.2",
+    "suncalc": "^1.9.0",
     "typescript": "^5.0.2"
   },
   "dependencies": {

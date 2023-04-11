@@ -14,7 +14,7 @@
 
     <p>
     <label >ZIP Code (or Latitude, Longitude coordinates): </label>
-    <input type="text" id="userLatLon" value="" onchange="onLocationUpdated()" autocomplete="off" title="Enter a ZIP Code or latitude/longitude coordinates">
+    <input type="text" id="userLatLon" value="" autocomplete="off" title="Enter a ZIP Code or latitude/longitude coordinates">
 
     <label for="hourSelect"> What time will the round start: </label>
     <select name="startTime" id="hourSelect">
@@ -46,7 +46,7 @@
     <br>
     <label for="desiredCourseCount" id="courseCountLabel">Choose how many nearby courses to show:</label>
     <input type="text" id="desiredCourseCount" value="10" title="Enter a number between 1 and 20">
-    <button onclick="nearestCourses()">Show Nearby Courses</button>
+    <button id="nearestCoursesButton">Show Nearby Courses</button>
     <br>
     <p id="lastLight">Last light today:</p>
     <table id="nearbyCourses">
@@ -62,7 +62,7 @@
       </tbody>
     </table> 
     </p>
-    <script src="./src/weather.ts"></script>
+    <script src="./src/weather.ts" type="module"></script>
     <footer>
       <p>  
       <a href="about.html">About Forecaster's Edge</a><br>
