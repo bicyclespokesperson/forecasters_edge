@@ -430,7 +430,7 @@ async function nearestCourses(): Promise<void> {
     })
     .then(updateCoursesTable);
 
-  updateLastLight(loc, 0); //TODO: UTC Offset
+  updateSunsetTime(loc, 0); //TODO: UTC Offset
 }
 
 function updateCoursesTable(courses: DiscGolfCourse[]): void {
@@ -473,9 +473,9 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
   }
 }
 
-function updateLastLight(loc: Point, _offsetUtc: number) {
-  const lastLightParagraph = document.getElementById("lastLight");
-  if (lastLightParagraph === null) {
+function updateSunsetTime(loc: Point, _offsetUtc: number) {
+  const sunsetParagraph = document.getElementById("sunsetTime");
+  if (sunsetParagraph === null) {
     return;
   }
 
@@ -488,7 +488,7 @@ function updateLastLight(loc: Point, _offsetUtc: number) {
     minute: "numeric",
     hour12: true,
   });
-  lastLightParagraph.textContent = `Sunset today: ${formattedTime}`;
+  sunsetParagraph.textContent = `Sunset today: ${formattedTime}`;
 }
 
 function clearInfoPopups(): boolean {
