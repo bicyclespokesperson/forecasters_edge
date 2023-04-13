@@ -258,7 +258,6 @@ function countDecimalPlaces(n: string): number {
   return parts[1].length;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function onLocationUpdated(): void {
   const inputBox = document.getElementById("userLatLon") as HTMLInputElement;
 
@@ -394,7 +393,6 @@ function getDesiredCourseCount(): number {
   return Math.max(Math.min(desiredCourseCount, maxCourses), minCourses);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function nearestCourses(): Promise<void> {
   const loc = await getUserLocation();
   if (!loc) {
@@ -430,7 +428,7 @@ async function nearestCourses(): Promise<void> {
     })
     .then(updateCoursesTable);
 
-  updateSunsetTime(loc, 0); //TODO: UTC Offset
+  updateSunsetTime(loc);
 }
 
 function updateCoursesTable(courses: DiscGolfCourse[]): void {
@@ -473,7 +471,7 @@ function updateCoursesTable(courses: DiscGolfCourse[]): void {
   }
 }
 
-function updateSunsetTime(loc: Point, _offsetUtc: number) {
+function updateSunsetTime(loc: Point) {
   const sunsetParagraph = document.getElementById("sunsetTime");
   if (sunsetParagraph === null) {
     return;
