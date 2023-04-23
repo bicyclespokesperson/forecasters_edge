@@ -7,6 +7,7 @@ const maxDecimalPlaces = 3;
 
 const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
 const zipcodeLocations = new Map<string, Point>();
+let courses: Promise<DiscGolfCourse[]> | undefined;
 
 class WeatherResponse {
   latitude: number;
@@ -528,13 +529,15 @@ function toCourse(line: string): DiscGolfCourse {
 async function fetchCourses(): Promise<DiscGolfCourse[]> {
   const filePath = "data/usa_courses.csv";
 
-  const courses: Promise<DiscGolfCourse[]> = fetch(filePath)
-    .then(async (response) => await response.text())
-    .then((contents) => {
-      const lines = contents.split("\n");
-      lines.shift();
-      return lines.map(toCourse);
-    });
+  if (!courses) {
+    courses = fetch(filePath)
+      .then(async (response) => await response.text())
+      .then((contents) => {
+        const lines = contents.split("\n");
+        lines.shift();
+        return lines.map(toCourse);
+      });
+  }
 
   return await courses;
 }
