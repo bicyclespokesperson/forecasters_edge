@@ -162,10 +162,7 @@ function calcWeatherScore(weather: WeatherResponse): WeatherScore {
   const maxBestTemperatureF = 90;
   const maxBestWindSpeedMPH = 25;
 
-  // This is the probability of 0.1mm of rain. This means it's too high,
-  // squaring the percentage gives a better estimate.
-  const precipProbabilityScore =
-    (1 - Math.pow(precipProbability / 100, 2)) * 2.5;
+  const precipProbabilityScore = (1 - precipProbability / 100) * 2.5;
 
   // Any precipitation means there will be substantial rain
   const precipScore = Math.max(7.5 - 2.7 * precip, 0);
