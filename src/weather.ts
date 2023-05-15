@@ -159,7 +159,7 @@ function calcWeatherScore(weather: WeatherResponse): WeatherScore {
 
   // Slight penalty if the temperature isn't in this range
   const minBestTemperatureF = 45;
-  const maxBestTemperatureF = 90;
+  const maxBestTemperatureF = 85;
   const maxBestWindSpeedMPH = 25;
 
   const precipProbabilityScore = (1 - precipProbability / 100) * 2.5;
