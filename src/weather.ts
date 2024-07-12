@@ -524,7 +524,20 @@ function toCourse(line: string): DiscGolfCourse {
 }
 
 async function fetchCourses(): Promise<DiscGolfCourse[]> {
-  const filePath = "data/usa_courses.csv";
+  const getWeekNumber = (date: Date) => {
+    const oneJan = new Date(date.getFullYear(), 0, 1);
+    const numberOfDays = Math.floor(
+      (date.getSeconds() - oneJan.getSeconds()) / (24 * 60 * 60)
+    );
+    return Math.ceil((date.getDay() + 1 + numberOfDays) / 7);
+  };
+
+  const currentDate = new Date();
+  const weekNumber = getWeekNumber(currentDate);
+
+  // Make sure the CSV is downloaded fresh at least every week (not cached)
+  // by making the URL unique
+  const filePath = "data/usa_courses.csv?v=" + weekNumber;
 
   if (!courses) {
     courses = fetch(filePath)
