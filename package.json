@@ -4,7 +4,6 @@
   "description": "Show the nearby disc golf courses with the best weather",
   "default": "index.html",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npx tsc --noEmit && eslint ./src/* --fix && prettier -w ./src/*",
     "start": "parcel ./index.html",
     "prebuild-dev": "shx rm -rf dist/*",
