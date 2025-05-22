@@ -6,6 +6,7 @@
   "scripts": {
     "lint": "npx tsc --noEmit && eslint ./src/* --fix && prettier -w ./src/*",
     "start": "parcel ./index.html",
+    "test": "mocha -r ts-node/register test/**/*.test.ts",
     "prebuild-dev": "shx rm -rf dist/*",
     "build-dev": "parcel build ./index.html --no-optimize --public-url ./ && cp -r ./data ./dist/ && touch ./dist/.nojekyll",
     "prebuild": "shx rm -rf dist/*",
@@ -15,19 +16,24 @@
   "author": "Jeremy Sigrist",
   "license": "ISC",
   "devDependencies": {
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
     "@types/suncalc": "^1.9.0",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
+    "chai": "^5.2.0",
     "cssnano": "^5.1.15",
     "eslint": "^8.36.0",
     "eslint-config-standard-with-typescript": "^34.0.1",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-n": "^15.6.1",
     "eslint-plugin-promise": "^6.1.1",
+    "mocha": "^11.4.0",
     "parcel": "^2.12.0",
     "postcss": "^8.4.21",
     "push-dir": "^0.4.1",
     "shx": "^0.3.2",
     "suncalc": "^1.9.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.2"
   },
   "dependencies": {
