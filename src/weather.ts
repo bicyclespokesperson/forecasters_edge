@@ -1,4 +1,5 @@
-import { getTimes } from "suncalc";
+import suncalc from "suncalc";
+const { getTimes } = suncalc;
 
 const mockWeatherRequests = false;
 
@@ -13,7 +14,7 @@ let currentSortColumn: string | null = null;
 let isAscending = true;
 let displayedCourses: DiscGolfCourse[] = [];
 
-class WeatherResponse {
+export class WeatherResponse {
   latitude: number;
   longitude: number;
   generationtime_ms: number;
@@ -63,7 +64,7 @@ class WeatherResponse {
   }
 }
 
-class Point {
+export class Point {
   constructor(public lat: number, public lon: number) {}
 
   toString(): string {
@@ -73,11 +74,11 @@ class Point {
   }
 }
 
-class WeatherScore {
+export class WeatherScore {
   constructor(public score: number, public summary: string) {}
 }
 
-class DiscGolfCourse {
+export class DiscGolfCourse {
   private weatherScore: WeatherScore | undefined = undefined;
 
   public distanceAwayKm = NaN;
@@ -106,28 +107,20 @@ class DiscGolfCourse {
   }
 }
 
-function calcWeatherScore(weather: WeatherResponse): WeatherScore {
+export function calcWeatherScore(weather: WeatherResponse, startHour: number): WeatherScore {
   // Weather start time is in local time based on the lat/lon of the request
   const weatherStartTime = new Date(weather.hourly.time[0]);
 
-  const roundStartTime = (() => {
-    const startHour = parseInt(
-      (document.getElementById("hourSelect") as HTMLInputElement).value
-    );
+  if (!(startHour >= 0 && startHour <= 23)) {
+    throw new Error("Invalid start hour");
+  }
 
-    if (!(startHour >= 0 && startHour <= 23)) {
-      throw new Error("Invalid start hour");
-    }
-
-    // Assume the round start time matches course's local time
-    const roundStartTime = new Date(weatherStartTime.valueOf());
-    roundStartTime.setHours(startHour);
-    roundStartTime.setMinutes(0);
-    roundStartTime.setSeconds(0);
-    roundStartTime.setMilliseconds(0);
-
-    return roundStartTime;
-  })();
+  // Assume the round start time matches course's local time
+  const roundStartTime = new Date(weatherStartTime.valueOf());
+  roundStartTime.setHours(startHour);
+  roundStartTime.setMinutes(0);
+  roundStartTime.setSeconds(0);
+  roundStartTime.setMilliseconds(0);
 
   // Calculate how far into the hours array to look for the forecasted hourly weather.
   const offsetHours = Math.floor(
@@ -321,7 +314,7 @@ function onLocationUpdated(): void {
 }
 
 // Haversine formula to get the distance between two points
-function distanceBetween(point1: Point, point2: Point): number {
+export function distanceBetween(point1: Point, point2: Point): number {
   const earthRadiusKm = 6371;
   const dLat = degToRad(point2.lat - point1.lat);
   const dLng = degToRad(point2.lon - point1.lon);
@@ -462,7 +455,9 @@ async function nearestCourses(): Promise<void> {
       await Promise.all(
         courses.map(async (course) => {
           await fetchWeather(course.location).then((weather) => {
-            course.setWeatherScore(calcWeatherScore(weather));
+            // TODO: Get startHour from the UI or a default value
+            const defaultStartHour = 9; // Example: 9 AM
+            course.setWeatherScore(calcWeatherScore(weather, defaultStartHour));
           });
         })
       );
@@ -565,7 +560,7 @@ function clearInfoPopups(): boolean {
   return removedAny;
 }
 
-function toCourse(line: string): DiscGolfCourse {
+export function toCourse(line: string): DiscGolfCourse {
   const delimiter = ",";
   const sp = line.split(delimiter);
   return new DiscGolfCourse(

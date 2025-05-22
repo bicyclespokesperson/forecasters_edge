@@ -1,12 +1,13 @@
 {
   "name": "forecasters-edge",
   "version": "0.0.1",
+  "type": "module",
   "description": "Show the nearby disc golf courses with the best weather",
   "default": "index.html",
   "scripts": {
     "lint": "npx tsc --noEmit && eslint ./src/* --fix && prettier -w ./src/*",
     "start": "parcel ./index.html",
-    "test": "mocha -r ts-node/register test/**/*.test.ts",
+    "test": "NODE_OPTIONS='--loader ts-node/esm' ./node_modules/.bin/mocha test/**/*.test.ts",
     "prebuild-dev": "shx rm -rf dist/*",
     "build-dev": "parcel build ./index.html --no-optimize --public-url ./ && cp -r ./data ./dist/ && touch ./dist/.nojekyll",
     "prebuild": "shx rm -rf dist/*",
@@ -34,7 +35,7 @@
     "shx": "^0.3.2",
     "suncalc": "^1.9.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.0.2"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "prettier": "^2.8.4"
