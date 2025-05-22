@@ -9,6 +9,10 @@ const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
 const zipcodeLocations = new Map<string, Point>();
 let courses: Promise<DiscGolfCourse[]> | undefined;
 
+let currentSortColumn: string | null = null;
+let isAscending = true;
+let displayedCourses: DiscGolfCourse[] = [];
+
 class WeatherResponse {
   latitude: number;
   longitude: number;
@@ -196,6 +200,51 @@ function calcWeatherScore(weather: WeatherResponse): WeatherScore {
     1
   )} wind score) = ${score.toFixed(1)}`;
   return new WeatherScore(score, components + "\n\n" + formula);
+}
+
+function sortCourses(column: string): void {
+  if (column === currentSortColumn) {
+    isAscending = !isAscending;
+  } else {
+    currentSortColumn = column;
+    isAscending = true;
+  }
+
+  displayedCourses.sort((a, b) => {
+    let comparison = 0;
+    switch (currentSortColumn) {
+      case "name":
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case "score":
+        comparison = a.getWeatherScore().score - b.getWeatherScore().score;
+        break;
+      case "distance":
+        comparison = a.distanceAwayKm - b.distanceAwayKm;
+        break;
+      case "holes":
+        comparison = a.numHoles - b.numHoles;
+        break;
+    }
+    return isAscending ? comparison : -comparison;
+  });
+
+  // Update header classes
+  const headers = document.querySelectorAll("#nearbyCourses thead th");
+  headers.forEach((th) => {
+    th.classList.remove("sort-asc", "sort-desc");
+  });
+
+  if (currentSortColumn) {
+    const activeHeader = document.querySelector(
+      `#nearbyCourses thead th[data-column="${currentSortColumn}"]`
+    );
+    if (activeHeader) {
+      activeHeader.classList.add(isAscending ? "sort-asc" : "sort-desc");
+    }
+  }
+
+  updateCoursesTable(displayedCourses);
 }
 
 async function fetchWeather(loc: Point): Promise<WeatherResponse> {
@@ -422,9 +471,12 @@ async function nearestCourses(): Promise<void> {
         (c1, c2) => c2.getWeatherScore().score - c1.getWeatherScore().score
       );
 
+      // Update displayedCourses with the fetched and initially sorted courses
+      displayedCourses = courses;
       return courses;
     })
-    .then(updateCoursesTable);
+    // Pass displayedCourses to updateCoursesTable
+    .then(() => updateCoursesTable(displayedCourses));
 
   updateSunsetTime(loc);
 }
@@ -567,6 +619,23 @@ async function pageInit(): Promise<void> {
     "userLatLon"
   ) as HTMLInputElement;
   locationInputBox?.addEventListener("change", onLocationUpdated);
+
+  const tableHeaders = document
+    .getElementById("nearbyCourses")
+    ?.getElementsByTagName("thead")[0]
+    ?.getElementsByTagName("th");
+
+  if (tableHeaders) {
+    const columnMappings = ["name", "score", "distance", "holes"];
+    for (let i = 0; i < tableHeaders.length; i++) {
+      const header = tableHeaders[i];
+      const columnName = columnMappings[i];
+      if (columnName) {
+        header.dataset.column = columnName;
+        header.addEventListener("click", () => sortCourses(columnName));
+      }
+    }
+  }
 }
 
 void pageInit();
