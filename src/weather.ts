@@ -599,6 +599,18 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
   return await courses;
 }
 
+export function chooseDefaultStartTime(currentDate: Date): string {
+  const dayOfWeek = currentDate.getDay(); // 0 (Sunday) to 6 (Saturday)
+  const currentHour = currentDate.getHours();
+
+  if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+    return "17"; // 5:00 PM
+  } else { // Saturday or Sunday
+    const nextHour = (currentHour + 1) % 24;
+    return nextHour.toString();
+  }
+}
+
 async function pageInit(): Promise<void> {
   document.addEventListener("click", clearInfoPopups);
   document.addEventListener("touchStart", clearInfoPopups);
@@ -607,18 +619,11 @@ async function pageInit(): Promise<void> {
     await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
   ).toString();
 
-  // Set default start time based on weekday/weekend
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 (Sunday) to 6 (Saturday)
+  // Set default start time using the new refactored function
   const hourSelect = document.getElementById("hourSelect") as HTMLSelectElement;
-
   if (hourSelect) {
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
-      hourSelect.value = "17"; // 5:00 PM
-    } else { // Saturday or Sunday
-      const nextHour = (now.getHours() + 1) % 24;
-      hourSelect.value = nextHour.toString();
-    }
+    const defaultStartTimeValue = chooseDefaultStartTime(new Date());
+    hourSelect.value = defaultStartTimeValue;
   }
 
   const nearestCoursesButton = document.getElementById("nearestCoursesButton");
@@ -647,6 +652,6 @@ async function pageInit(): Promise<void> {
   }
 }
 
-export { pageInit }; // Export for testing
+export { pageInit }; // Export chooseDefaultStartTime via its function definition
 
 void pageInit();
