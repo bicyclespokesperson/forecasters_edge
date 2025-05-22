@@ -142,6 +142,28 @@ td, th {
   text-align: center;
 }
 
+#nearbyCourses th {
+  position: relative; /* To position the arrow */
+  padding-right: 20px; /* Space for the arrow */
+}
+
+#nearbyCourses th::after {
+  content: '';
+  position: absolute;
+  right: 5px; /* Adjust as needed */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px; /* Adjust as needed */
+}
+
+#nearbyCourses th.sort-asc::after {
+  content: '\25B2'; /* Up arrow ▲ */
+}
+
+#nearbyCourses th.sort-desc::after {
+  content: '\25BC'; /* Down arrow ▼ */
+}
+
 footer {
   text-align: left;
   margin-top: 1em;
