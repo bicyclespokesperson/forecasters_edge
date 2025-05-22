@@ -1,0 +1,217 @@
+@media (prefers-color-scheme: light) {
+  body {
+    color: #000;
+    background-color: #fff;
+  }
+
+  td, th {
+    border: 1px solid #000;
+  }
+
+  .more_info {
+    color: #fff;
+    background: #2b2b2b;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: #d3d3d3;
+    background-color: #000;
+  }
+
+  a {
+    color: #627d98;
+  }
+
+  a:visited {
+    color: #616e7c;
+  }
+
+  th {
+    border: 1px solid #007bff;
+    border-color: #007bff #212121;
+  }
+
+  td {
+    border: 1px solid #212121;
+  }
+
+  .more_info {
+    color: #000;
+    background: silver;
+  }
+}
+
+body {
+  width: 98%;
+  margin-left: 1%;
+  margin-right: 1%;
+  font-family: Open Sans, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 100vw;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2em;
+}
+
+label {
+  margin-top: 1em;
+  margin-bottom: .5em;
+  display: block;
+}
+
+#courseCountLabel {
+  margin-top: 1em;
+}
+
+input[type="text"] {
+  box-sizing: border-box;
+  background-color: inherit;
+  color: inherit;
+  margin-bottom: 1em;
+  padding: .5em;
+}
+
+select {
+  background-color: inherit;
+  color: inherit;
+  margin: 0 auto;
+  display: block;
+}
+
+button {
+  color: inherit;
+  cursor: pointer;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  margin: 0 0 .2em;
+  padding: .5em 1em;
+  font-weight: bold;
+  display: block;
+}
+
+select, button {
+  float: left;
+  clear: both;
+  font-size: inherit;
+  margin-right: 1em;
+}
+
+#userLatLon, #desiredCourseCount {
+  width: calc(100% - 200px);
+  max-width: 300px;
+  font-size: inherit;
+}
+
+p input {
+  width: auto;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  border: 1px solid #aaa;
+  display: inline-block;
+}
+
+p {
+  margin-top: .1em;
+  margin-bottom: .1em;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 1em;
+}
+
+thead {
+  color: inherit;
+  background-color: #007bff;
+  font-weight: bold;
+}
+
+td, th {
+  text-align: center;
+  padding: .5em;
+}
+
+#nearbyCourses th {
+  padding-right: 20px;
+  position: relative;
+}
+
+#nearbyCourses th:after {
+  content: "";
+  font-size: 12px;
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+}
+
+#nearbyCourses th.sort-asc:after {
+  content: "▲";
+}
+
+#nearbyCourses th.sort-desc:after {
+  content: "▼";
+}
+
+footer {
+  text-align: left;
+  margin-top: 1em;
+  font-size: .8em;
+}
+
+#hourSelect, p {
+  float: left;
+  clear: left;
+}
+
+#lastLight {
+  margin-top: .3em;
+  margin-bottom: .1em;
+}
+
+.more_info {
+  white-space: pre-line;
+  top: inherit;
+  z-index: auto;
+  border: 1px dotted;
+  width: 20em;
+  height: auto;
+  margin-left: 20px;
+  padding: 4px;
+  animation: .15s linear fadeIn;
+  position: absolute;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+/*# sourceMappingURL=forecasters-edge.b2625c6b.css.map */
