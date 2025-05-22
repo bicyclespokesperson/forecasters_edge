@@ -231,14 +231,16 @@ function sortCourses(column: string): void {
 
   // Update header classes
   const headers = document.querySelectorAll("#nearbyCourses thead th");
-  headers.forEach(th => {
-    th.classList.remove('sort-asc', 'sort-desc');
+  headers.forEach((th) => {
+    th.classList.remove("sort-asc", "sort-desc");
   });
 
   if (currentSortColumn) {
-    const activeHeader = document.querySelector(`#nearbyCourses thead th[data-column="${currentSortColumn}"]`);
+    const activeHeader = document.querySelector(
+      `#nearbyCourses thead th[data-column="${currentSortColumn}"]`
+    );
     if (activeHeader) {
-      activeHeader.classList.add(isAscending ? 'sort-asc' : 'sort-desc');
+      activeHeader.classList.add(isAscending ? "sort-asc" : "sort-desc");
     }
   }
 
