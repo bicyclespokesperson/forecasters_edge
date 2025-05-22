@@ -607,6 +607,20 @@ async function pageInit(): Promise<void> {
     await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
   ).toString();
 
+  // Set default start time based on weekday/weekend
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 (Sunday) to 6 (Saturday)
+  const hourSelect = document.getElementById("hourSelect") as HTMLSelectElement;
+
+  if (hourSelect) {
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+      hourSelect.value = "17"; // 5:00 PM
+    } else { // Saturday or Sunday
+      const nextHour = (now.getHours() + 1) % 24;
+      hourSelect.value = nextHour.toString();
+    }
+  }
+
   const nearestCoursesButton = document.getElementById("nearestCoursesButton");
   nearestCoursesButton?.addEventListener("click", nearestCourses);
 
@@ -632,5 +646,7 @@ async function pageInit(): Promise<void> {
     }
   }
 }
+
+export { pageInit }; // Export for testing
 
 void pageInit();

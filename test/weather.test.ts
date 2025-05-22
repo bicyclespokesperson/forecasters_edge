@@ -224,3 +224,168 @@ describe("toCourse", () => {
 
   });
 });
+
+import { pageInit } from "../src/weather.js"; // Import the function to be tested
+
+describe("pageInit", () => {
+  let mockHourSelect: HTMLSelectElement;
+  let originalGetElementById: ((elementId: string) => HTMLElement | null) | undefined;
+  let originalDocument: Document | undefined;
+  let originalDate: DateConstructor;
+
+  beforeEach(() => {
+    // Mock HTMLSelectElement
+    mockHourSelect = { value: "" } as HTMLSelectElement;
+
+    // Ensure global.document exists and has addEventListener
+    if (typeof global.document === 'undefined') {
+      (global as any).document = {
+        addEventListener: () => {}, // No-op mock
+        // getElementById will be set next
+      };
+    } else {
+      originalDocument = global.document; // Save if it exists
+      // If document exists but addEventListener doesn't, add a mock one temporarily
+      if (!global.document.addEventListener) {
+        (global.document as any).addEventListener = () => {};
+      }
+    }
+
+    // Mock document.getElementById
+    originalGetElementById = global.document.getElementById; // Save original getElementById
+    global.document.getElementById = (id: string) => {
+      if (id === "hourSelect") {
+        return mockHourSelect;
+      }
+      if (id === "nearbyCourses") {
+        return {
+          getElementsByTagName: (tagName: string) => {
+            if (tagName === "thead") {
+              return [{ // Mocking the thead element
+                getElementsByTagName: () => [], // Mocking th elements array, can be empty
+              }];
+            }
+            return []; // Default for other tags
+          },
+          // Add other properties/methods if pageInit uses them for 'nearbyCourses'
+          style: {},
+          value: "",
+          addEventListener: () => {},
+        } as any; // Using 'any' for simplicity in this mock chain
+      }
+      // Return a generic mock for other elements pageInit might try to get (e.g., userLatLon)
+      return { value: "", addEventListener: () => {}, style: {} } as HTMLElement & { value: string, style: Record<string, string>, addEventListener: () => void};
+    };
+
+    // Mock navigator.geolocation - pageInit calls getBrowserLocation which uses this
+    if (!global.navigator) {
+      (global as any).navigator = {};
+    }
+    (global as any).navigator.geolocation = {
+      getCurrentPosition: (success: (position: any) => void) => {
+        // Provide a mock successful geolocation result
+        success({ coords: { latitude: 33.6458, longitude: -82.2888 } });
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+
+
+    // Save original Date
+    originalDate = global.Date;
+  });
+
+  afterEach(() => {
+    // Restore original document.getElementById and Date
+    if (originalGetElementById) {
+      global.document.getElementById = originalGetElementById;
+    } else if (originalDocument) {
+      // If document didn't have getElementById but we created document, and it had our mock addEventListener
+      if (!(originalGetElementById) && (global.document as any).addEventListener && (global.document as any).addEventListener.toString().includes("No-op mock")) {
+         delete (global.document as any).addEventListener;
+      }
+      delete (global.document as any).getElementById;
+    } else if (!originalDocument && global.document) { // If global.document was created by us, remove it.
+      delete (global as any).document;
+    }
+
+    // Restore original document fully if it existed
+    if (originalDocument) {
+      global.document = originalDocument;
+    } else if (global.document && Object.keys(global.document).length === 0) {
+      // If it's an empty object we might have made, clean it up
+      delete (global as any).document;
+    }
+
+
+    global.Date = originalDate;
+    // Clean up navigator.geolocation mock
+    if ((global as any).navigator && (global as any).navigator.geolocation) {
+      delete (global as any).navigator.geolocation;
+    }
+    if ((global as any).navigator && Object.keys((global as any).navigator).length === 0) {
+      delete (global as any).navigator;
+    }
+  });
+
+  const mockDate = (isoDateString: string) => {
+    const mockNow = new originalDate(isoDateString); // Use originalDate to create mockNow
+    (global as any).Date = class extends originalDate {
+      constructor(...args: [] | [string | number | Date] | [number, number, ...number[]]) {
+        // If constructor is called with arguments, behave like original Date
+        if (args.length > 0) {
+          // @ts-ignore TS doesn't like the union type for `args` with `super`
+          super(...args);
+        } else {
+          // If constructor is called without arguments (i.e., `new Date()`), return our mockNow
+          // We need to call super() first to initialize the object, then we can modify it
+          // or ensure it represents mockNow. A simple way is to return a new originalDate instance of mockNow.
+          // However, a constructor should implicitly return `this`.
+          // So, we construct `this` (an instance of the mocked Date) based on mockNow.
+          super(mockNow.toISOString());
+        }
+      }
+      static now(): number {
+        return mockNow.getTime();
+      }
+      // Optionally, override other Date methods if pageInit uses them with `new Date()` instances
+      // For example, if it did `new Date().getDay()`:
+      getDay(): number {
+        // Ensure this instance, if created via `new Date()`, reflects mockNow's day
+        // This logic assumes the constructor correctly sets up the date based on mockNow
+        return new originalDate(this.toISOString()).getDay();
+      }
+      getHours(): number {
+        return new originalDate(this.toISOString()).getHours();
+      }
+      // Add other methods as needed, e.g., getFullYear, getMonth, etc.
+    };
+  };
+
+  it("should set hourSelect to 17 on a weekday", async () => {
+    // Monday, October 30, 2023 10:00:00 AM GMT
+    mockDate("2023-10-30T10:00:00.000Z");
+    await pageInit();
+    expect(mockHourSelect.value).to.equal("17");
+  });
+
+  it("should set hourSelect to the next hour on a weekend (mid-day)", async () => {
+    // Saturday, October 28, 2023 10:00:00 AM GMT
+    mockDate("2023-10-28T10:00:00.000Z"); // 10 AM
+    await pageInit();
+    expect(mockHourSelect.value).to.equal("11"); // Current hour is 10 (from mockDate), so next hour is 11
+  });
+
+  it("should set hourSelect to 0 on a weekend (late night, 11 PM)", async () => {
+    // Sunday, October 29, 2023 23:00:00 PM GMT
+    mockDate("2023-10-29T23:00:00.000Z"); // 11 PM
+    await pageInit();
+    expect(mockHourSelect.value).to.equal("0"); // Current hour is 23, so next hour is 0 (midnight)
+  });
+
+  it("should set hourSelect to 0 on a weekend (late night, 11:59 PM)", async () => {
+    // Sunday, October 29, 2023 23:59:59 PM GMT
+    mockDate("2023-10-29T23:59:59.000Z"); // 11:59:59 PM
+    await pageInit();
+    expect(mockHourSelect.value).to.equal("0"); // Current hour is 23, so next hour is 0 (midnight)
+  });
+});
