@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { Point } from "../src/weather.js";
+import { chooseDefaultStartTime } from "../src/weather.js";
 
 describe("Point", () => {
   it("should correctly assign lat and lon values", () => {
@@ -18,12 +19,21 @@ describe("Point", () => {
   });
 });
 
-import { WeatherResponse, WeatherScore, calcWeatherScore } from "../src/weather.js";
+import {
+  WeatherResponse,
+  WeatherScore,
+  calcWeatherScore,
+} from "../src/weather.js";
 
 // Helper function to create a mock WeatherResponse
-const createMockWeatherResponse = (overrides: Partial<WeatherResponse["hourly"]> = {}): WeatherResponse => {
+const createMockWeatherResponse = (
+  overrides: Partial<WeatherResponse["hourly"]> = {}
+): WeatherResponse => {
   const defaultHourlyData = {
-    time: Array.from({ length: 24 }, (_, i) => `2023-10-27T${i.toString().padStart(2, '0')}:00`),
+    time: Array.from(
+      { length: 24 },
+      (_, i) => `2023-10-27T${i.toString().padStart(2, "0")}:00`
+    ),
     temperature_2m: Array(24).fill(65), // 65F
     precipitation_probability: Array(24).fill(10), // 10%
     precipitation: Array(24).fill(0.1), // 0.1mm
@@ -61,44 +71,58 @@ describe("calcWeatherScore", () => {
   });
 
   it("should return a lower score for high precipitation", () => {
-    const weather = createMockWeatherResponse({ precipitation: Array(24).fill(5) }); // 5mm rain
+    const weather = createMockWeatherResponse({
+      precipitation: Array(24).fill(5),
+    }); // 5mm rain
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(5);
   });
 
   it("should return a lower score for high precipitation probability", () => {
-    const weather = createMockWeatherResponse({ precipitation_probability: Array(24).fill(80) }); // 80% chance of rain
+    const weather = createMockWeatherResponse({
+      precipitation_probability: Array(24).fill(80),
+    }); // 80% chance of rain
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.closeTo(7.73, 0.1); // Adjusted expectation
   });
 
   it("should penalize score for very low temperatures", () => {
-    const weather = createMockWeatherResponse({ temperature_2m: Array(24).fill(30) }); // 30F
+    const weather = createMockWeatherResponse({
+      temperature_2m: Array(24).fill(30),
+    }); // 30F
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(8);
   });
 
   it("should penalize score for very high temperatures", () => {
-    const weather = createMockWeatherResponse({ temperature_2m: Array(24).fill(95) }); // 95F
+    const weather = createMockWeatherResponse({
+      temperature_2m: Array(24).fill(95),
+    }); // 95F
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(8);
   });
 
   it("should penalize score for high wind speed", () => {
-    const weather = createMockWeatherResponse({ windspeed_10m: Array(24).fill(50) }); // 50 km/h
+    const weather = createMockWeatherResponse({
+      windspeed_10m: Array(24).fill(50),
+    }); // 50 km/h
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(7);
   });
 
   it("should throw an error for insufficient weather data", () => {
     const weather = createMockWeatherResponse({
-      time: Array.from({ length: 20 }, (_, i) => `2023-10-27T${i.toString().padStart(2, '0')}:00`),
+      time: Array.from(
+        { length: 20 },
+        (_, i) => `2023-10-27T${i.toString().padStart(2, "0")}:00`
+      ),
       temperature_2m: Array(20).fill(65),
       precipitation_probability: Array(20).fill(10),
       precipitation: Array(20).fill(0.1),
       windspeed_10m: Array(20).fill(5),
     });
-    expect(() => calcWeatherScore(weather, 22)).to.throw( // Pass 22 as startHour
+    expect(() => calcWeatherScore(weather, 22)).to.throw(
+      // Pass 22 as startHour
       "Insufficient weather data"
     );
   });
@@ -113,15 +137,15 @@ import { distanceBetween } from "../src/weather.js";
 
 describe("distanceBetween", () => {
   it("should return 0 for identical points", () => {
-    const point1 = new Point(40.7128, -74.0060); // New York City
-    const point2 = new Point(40.7128, -74.0060); // New York City
+    const point1 = new Point(40.7128, -74.006); // New York City
+    const point2 = new Point(40.7128, -74.006); // New York City
     const dist = distanceBetween(point1, point2);
     expect(dist).to.equal(0);
   });
 
   it("should return the correct distance between two known points (Paris to Lyon)", () => {
     const paris = new Point(48.8566, 2.3522);
-    const lyon = new Point(45.7640, 4.8357);
+    const lyon = new Point(45.764, 4.8357);
     const dist = distanceBetween(paris, lyon);
     // Expected distance is ~392.2 km. Using a delta of 1.5 km for tolerance.
     expect(dist).to.be.closeTo(392.2, 1.5);
@@ -199,7 +223,7 @@ describe("toCourse", () => {
     // it would be quoted in the CSV, and `toCourse` would need to handle that.
     // The current `toCourse` implementation splits by any comma, so this would fail.
     // This is more of a test for future robustness or a known limitation.
-    const csvLine = "\"The Oaks, Big Course\",18,34.1111,-118.2222";
+    const csvLine = '"The Oaks, Big Course",18,34.1111,-118.2222';
     // If toCourse is not designed to handle quoted commas in names, this test will reflect that.
     // Current behavior:
     try {
@@ -208,10 +232,10 @@ describe("toCourse", () => {
       expect(course.name).to.equal('"The Oaks'); // because it splits on the first comma
       expect(course.numHoles).to.equal(NaN); // " Big Course\"" is not a number
       expect(course.location.lat).to.equal(18); // lat becomes numHoles due to split
-      expect(course.location.lon).to.be.closeTo(34.1111,0.0001); // lon becomes lat
+      expect(course.location.lon).to.be.closeTo(34.1111, 0.0001); // lon becomes lat
     } catch (e) {
       // If it errors (e.g., due to parseFloat failing on non-numeric parts), that's also a valid outcome for current behavior.
-      expect(e).to.be.an('error'); // Or more specific error if applicable
+      expect(e).to.be.an("error"); // Or more specific error if applicable
     }
     // A more robust `toCourse` would correctly parse:
     // name: "The Oaks, Big Course", numHoles: 18, lat: 34.1111, lon: -118.2222
@@ -221,6 +245,61 @@ describe("toCourse", () => {
     const simpleCourse = toCourse(simpleCsvLine);
     expect(simpleCourse.name).to.equal("The Oaks");
     expect(simpleCourse.numHoles).to.equal(18);
+  });
+});
 
+describe("chooseDefaultStartTime", () => {
+  it("should return '17' for a weekday (Monday)", () => {
+    // Monday, October 30, 2023 10:00:00
+    const weekdayDate = new Date(2023, 9, 30, 10, 0, 0); // Month is 0-indexed (9 for October)
+    expect(chooseDefaultStartTime(weekdayDate)).to.equal("17");
+  });
+
+  it("should return '17' for a weekday (Friday)", () => {
+    // Friday, November 3, 2023 14:00:00
+    const weekdayDate = new Date(2023, 10, 3, 14, 0, 0); // Month is 0-indexed (10 for November)
+    expect(chooseDefaultStartTime(weekdayDate)).to.equal("17");
+  });
+
+  it("should return the next hour for a weekend (Saturday, mid-day)", () => {
+    // Saturday, October 28, 2023 10:00:00
+    const weekendMidDay = new Date(2023, 9, 28, 10, 0, 0);
+    expect(chooseDefaultStartTime(weekendMidDay)).to.equal("11");
+  });
+
+  it("should return '0' for a weekend (Sunday, 11 PM)", () => {
+    // Sunday, October 29, 2023 23:00:00
+    const weekendLateNight = new Date(2023, 9, 29, 23, 0, 0);
+    expect(chooseDefaultStartTime(weekendLateNight)).to.equal("0");
+  });
+
+  it("should return '2' for a weekend (Saturday, 1 AM)", () => {
+    // Saturday, October 28, 2023 01:00:00
+    const weekendMorning = new Date(2023, 9, 28, 1, 0, 0);
+    expect(chooseDefaultStartTime(weekendMorning)).to.equal("2");
+  });
+
+  it("should return '17' for Friday 11 PM (still weekday behavior)", () => {
+    // Friday, November 3, 2023 23:00:00
+    const fridayLate = new Date(2023, 10, 3, 23, 0, 0);
+    expect(chooseDefaultStartTime(fridayLate)).to.equal("17");
+  });
+
+  it("should return '0' for Sunday 11 PM (weekend behavior, next hour is midnight)", () => {
+    // Sunday, November 5, 2023 23:00:00
+    const sundayLate = new Date(2023, 10, 5, 23, 0, 0);
+    expect(chooseDefaultStartTime(sundayLate)).to.equal("0");
+  });
+
+  it("should return '17' for Monday 12 AM (already Monday, so weekday behavior)", () => {
+    // Monday, November 6, 2023 00:00:00
+    const mondayEarly = new Date(2023, 10, 6, 0, 0, 0);
+    expect(chooseDefaultStartTime(mondayEarly)).to.equal("17");
+  });
+
+  it("should return '1' for Saturday 12 AM (already Saturday, so weekend behavior, next hour is 1 AM)", () => {
+    // Saturday, November 4, 2023 00:00:00
+    const saturdayEarly = new Date(2023, 10, 4, 0, 0, 0);
+    expect(chooseDefaultStartTime(saturdayEarly)).to.equal("1");
   });
 });
