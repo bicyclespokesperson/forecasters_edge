@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { Point } from "../src/weather.js";
+import { chooseDefaultStartTime } from "../src/weather.js";
 
 describe("Point", () => {
   it("should correctly assign lat and lon values", () => {
@@ -18,12 +19,21 @@ describe("Point", () => {
   });
 });
 
-import { WeatherResponse, WeatherScore, calcWeatherScore } from "../src/weather.js";
+import {
+  WeatherResponse,
+  WeatherScore,
+  calcWeatherScore,
+} from "../src/weather.js";
 
 // Helper function to create a mock WeatherResponse
-const createMockWeatherResponse = (overrides: Partial<WeatherResponse["hourly"]> = {}): WeatherResponse => {
+const createMockWeatherResponse = (
+  overrides: Partial<WeatherResponse["hourly"]> = {}
+): WeatherResponse => {
   const defaultHourlyData = {
-    time: Array.from({ length: 24 }, (_, i) => `2023-10-27T${i.toString().padStart(2, '0')}:00`),
+    time: Array.from(
+      { length: 24 },
+      (_, i) => `2023-10-27T${i.toString().padStart(2, "0")}:00`
+    ),
     temperature_2m: Array(24).fill(65), // 65F
     precipitation_probability: Array(24).fill(10), // 10%
     precipitation: Array(24).fill(0.1), // 0.1mm
@@ -61,44 +71,58 @@ describe("calcWeatherScore", () => {
   });
 
   it("should return a lower score for high precipitation", () => {
-    const weather = createMockWeatherResponse({ precipitation: Array(24).fill(5) }); // 5mm rain
+    const weather = createMockWeatherResponse({
+      precipitation: Array(24).fill(5),
+    }); // 5mm rain
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(5);
   });
 
   it("should return a lower score for high precipitation probability", () => {
-    const weather = createMockWeatherResponse({ precipitation_probability: Array(24).fill(80) }); // 80% chance of rain
+    const weather = createMockWeatherResponse({
+      precipitation_probability: Array(24).fill(80),
+    }); // 80% chance of rain
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.closeTo(7.73, 0.1); // Adjusted expectation
   });
 
   it("should penalize score for very low temperatures", () => {
-    const weather = createMockWeatherResponse({ temperature_2m: Array(24).fill(30) }); // 30F
+    const weather = createMockWeatherResponse({
+      temperature_2m: Array(24).fill(30),
+    }); // 30F
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(8);
   });
 
   it("should penalize score for very high temperatures", () => {
-    const weather = createMockWeatherResponse({ temperature_2m: Array(24).fill(95) }); // 95F
+    const weather = createMockWeatherResponse({
+      temperature_2m: Array(24).fill(95),
+    }); // 95F
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(8);
   });
 
   it("should penalize score for high wind speed", () => {
-    const weather = createMockWeatherResponse({ windspeed_10m: Array(24).fill(50) }); // 50 km/h
+    const weather = createMockWeatherResponse({
+      windspeed_10m: Array(24).fill(50),
+    }); // 50 km/h
     const scoreData = calcWeatherScore(weather, 9);
     expect(scoreData.score).to.be.lessThan(7);
   });
 
   it("should throw an error for insufficient weather data", () => {
     const weather = createMockWeatherResponse({
-      time: Array.from({ length: 20 }, (_, i) => `2023-10-27T${i.toString().padStart(2, '0')}:00`),
+      time: Array.from(
+        { length: 20 },
+        (_, i) => `2023-10-27T${i.toString().padStart(2, "0")}:00`
+      ),
       temperature_2m: Array(20).fill(65),
       precipitation_probability: Array(20).fill(10),
       precipitation: Array(20).fill(0.1),
       windspeed_10m: Array(20).fill(5),
     });
-    expect(() => calcWeatherScore(weather, 22)).to.throw( // Pass 22 as startHour
+    expect(() => calcWeatherScore(weather, 22)).to.throw(
+      // Pass 22 as startHour
       "Insufficient weather data"
     );
   });
@@ -113,15 +137,15 @@ import { distanceBetween } from "../src/weather.js";
 
 describe("distanceBetween", () => {
   it("should return 0 for identical points", () => {
-    const point1 = new Point(40.7128, -74.0060); // New York City
-    const point2 = new Point(40.7128, -74.0060); // New York City
+    const point1 = new Point(40.7128, -74.006); // New York City
+    const point2 = new Point(40.7128, -74.006); // New York City
     const dist = distanceBetween(point1, point2);
     expect(dist).to.equal(0);
   });
 
   it("should return the correct distance between two known points (Paris to Lyon)", () => {
     const paris = new Point(48.8566, 2.3522);
-    const lyon = new Point(45.7640, 4.8357);
+    const lyon = new Point(45.764, 4.8357);
     const dist = distanceBetween(paris, lyon);
     // Expected distance is ~392.2 km. Using a delta of 1.5 km for tolerance.
     expect(dist).to.be.closeTo(392.2, 1.5);
@@ -199,7 +223,7 @@ describe("toCourse", () => {
     // it would be quoted in the CSV, and `toCourse` would need to handle that.
     // The current `toCourse` implementation splits by any comma, so this would fail.
     // This is more of a test for future robustness or a known limitation.
-    const csvLine = "\"The Oaks, Big Course\",18,34.1111,-118.2222";
+    const csvLine = '"The Oaks, Big Course",18,34.1111,-118.2222';
     // If toCourse is not designed to handle quoted commas in names, this test will reflect that.
     // Current behavior:
     try {
@@ -208,10 +232,10 @@ describe("toCourse", () => {
       expect(course.name).to.equal('"The Oaks'); // because it splits on the first comma
       expect(course.numHoles).to.equal(NaN); // " Big Course\"" is not a number
       expect(course.location.lat).to.equal(18); // lat becomes numHoles due to split
-      expect(course.location.lon).to.be.closeTo(34.1111,0.0001); // lon becomes lat
+      expect(course.location.lon).to.be.closeTo(34.1111, 0.0001); // lon becomes lat
     } catch (e) {
       // If it errors (e.g., due to parseFloat failing on non-numeric parts), that's also a valid outcome for current behavior.
-      expect(e).to.be.an('error'); // Or more specific error if applicable
+      expect(e).to.be.an("error"); // Or more specific error if applicable
     }
     // A more robust `toCourse` would correctly parse:
     // name: "The Oaks, Big Course", numHoles: 18, lat: 34.1111, lon: -118.2222
@@ -221,177 +245,8 @@ describe("toCourse", () => {
     const simpleCourse = toCourse(simpleCsvLine);
     expect(simpleCourse.name).to.equal("The Oaks");
     expect(simpleCourse.numHoles).to.equal(18);
-
   });
 });
-
-// The pageInit tests are removed as per the task, since chooseDefaultStartTime is now tested directly.
-// import { pageInit } from "../src/weather.js"; 
-
-// describe("pageInit", () => {
-//   let mockHourSelect: HTMLSelectElement;
-//   let originalGetElementById: ((elementId: string) => HTMLElement | null) | undefined;
-//   let originalDocument: Document | undefined;
-//   let originalDate: DateConstructor;
-
-//   beforeEach(() => {
-//     // Mock HTMLSelectElement
-//     mockHourSelect = { value: "" } as HTMLSelectElement;
-
-//     // Ensure global.document exists and has addEventListener
-//     if (typeof global.document === 'undefined') {
-//       (global as any).document = {
-//         addEventListener: () => {}, // No-op mock
-//         // getElementById will be set next
-//       };
-//     } else {
-//       originalDocument = global.document; // Save if it exists
-//       // If document exists but addEventListener doesn't, add a mock one temporarily
-//       if (!global.document.addEventListener) {
-//         (global.document as any).addEventListener = () => {};
-//       }
-//     }
-
-//     // Mock document.getElementById
-//     originalGetElementById = global.document.getElementById; // Save original getElementById
-//     global.document.getElementById = (id: string) => {
-//       if (id === "hourSelect") {
-//         return mockHourSelect;
-//       }
-//       if (id === "nearbyCourses") {
-//         return {
-//           getElementsByTagName: (tagName: string) => {
-//             if (tagName === "thead") {
-//               return [{ // Mocking the thead element
-//                 getElementsByTagName: () => [], // Mocking th elements array, can be empty
-//               }];
-//             }
-//             return []; // Default for other tags
-//           },
-//           // Add other properties/methods if pageInit uses them for 'nearbyCourses'
-//           style: {},
-//           value: "",
-//           addEventListener: () => {},
-//         } as any; // Using 'any' for simplicity in this mock chain
-//       }
-//       // Return a generic mock for other elements pageInit might try to get (e.g., userLatLon)
-//       return { value: "", addEventListener: () => {}, style: {} } as HTMLElement & { value: string, style: Record<string, string>, addEventListener: () => void};
-//     };
-
-//     // Mock navigator.geolocation - pageInit calls getBrowserLocation which uses this
-//     if (!global.navigator) {
-//       (global as any).navigator = {};
-//     }
-//     (global as any).navigator.geolocation = {
-//       getCurrentPosition: (success: (position: any) => void) => {
-//         // Provide a mock successful geolocation result
-//         success({ coords: { latitude: 33.6458, longitude: -82.2888 } });
-//       },
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//     } as any;
-
-
-//     // Save original Date
-//     originalDate = global.Date;
-//   });
-
-//   afterEach(() => {
-//     // Restore original document.getElementById and Date
-//     if (originalGetElementById) {
-//       global.document.getElementById = originalGetElementById;
-//     } else if (originalDocument) {
-//       // If document didn't have getElementById but we created document, and it had our mock addEventListener
-//       if (!(originalGetElementById) && (global.document as any).addEventListener && (global.document as any).addEventListener.toString().includes("No-op mock")) {
-//          delete (global.document as any).addEventListener;
-//       }
-//       delete (global.document as any).getElementById;
-//     } else if (!originalDocument && global.document) { // If global.document was created by us, remove it.
-//       delete (global as any).document;
-//     }
-
-//     // Restore original document fully if it existed
-//     if (originalDocument) {
-//       global.document = originalDocument;
-//     } else if (global.document && Object.keys(global.document).length === 0) {
-//       // If it's an empty object we might have made, clean it up
-//       delete (global as any).document;
-//     }
-
-
-//     global.Date = originalDate;
-//     // Clean up navigator.geolocation mock
-//     if ((global as any).navigator && (global as any).navigator.geolocation) {
-//       delete (global as any).navigator.geolocation;
-//     }
-//     if ((global as any).navigator && Object.keys((global as any).navigator).length === 0) {
-//       delete (global as any).navigator;
-//     }
-//   });
-
-//   const mockDate = (isoDateString: string) => {
-//     const mockNow = new originalDate(isoDateString); // Use originalDate to create mockNow
-//     (global as any).Date = class extends originalDate {
-//       constructor(...args: [] | [string | number | Date] | [number, number, ...number[]]) {
-//         // If constructor is called with arguments, behave like original Date
-//         if (args.length > 0) {
-//           // @ts-ignore TS doesn't like the union type for `args` with `super`
-//           super(...args);
-//         } else {
-//           // If constructor is called without arguments (i.e., `new Date()`), return our mockNow
-//           // We need to call super() first to initialize the object, then we can modify it
-//           // or ensure it represents mockNow. A simple way is to return a new originalDate instance of mockNow.
-//           // However, a constructor should implicitly return `this`.
-//           // So, we construct `this` (an instance of the mocked Date) based on mockNow.
-//           super(mockNow.toISOString());
-//         }
-//       }
-//       static now(): number {
-//         return mockNow.getTime();
-//       }
-//       // Optionally, override other Date methods if pageInit uses them with `new Date()` instances
-//       // For example, if it did `new Date().getDay()`:
-//       getDay(): number {
-//         // Ensure this instance, if created via `new Date()`, reflects mockNow's day
-//         // This logic assumes the constructor correctly sets up the date based on mockNow
-//         return new originalDate(this.toISOString()).getDay();
-//       }
-//       getHours(): number {
-//         return new originalDate(this.toISOString()).getHours();
-//       }
-//       // Add other methods as needed, e.g., getFullYear, getMonth, etc.
-//     };
-//   };
-
-//   it("should set hourSelect to 17 on a weekday", async () => {
-//     // Monday, October 30, 2023 10:00:00 AM GMT
-//     mockDate("2023-10-30T10:00:00.000Z");
-//     await pageInit();
-//     expect(mockHourSelect.value).to.equal("17");
-//   });
-
-//   it("should set hourSelect to the next hour on a weekend (mid-day)", async () => {
-//     // Saturday, October 28, 2023 10:00:00 AM GMT
-//     mockDate("2023-10-28T10:00:00.000Z"); // 10 AM
-//     await pageInit();
-//     expect(mockHourSelect.value).to.equal("11"); // Current hour is 10 (from mockDate), so next hour is 11
-//   });
-
-//   it("should set hourSelect to 0 on a weekend (late night, 11 PM)", async () => {
-//     // Sunday, October 29, 2023 23:00:00 PM GMT
-//     mockDate("2023-10-29T23:00:00.000Z"); // 11 PM
-//     await pageInit();
-//     expect(mockHourSelect.value).to.equal("0"); // Current hour is 23, so next hour is 0 (midnight)
-//   });
-
-//   it("should set hourSelect to 0 on a weekend (late night, 11:59 PM)", async () => {
-//     // Sunday, October 29, 2023 23:59:59 PM GMT
-//     mockDate("2023-10-29T23:59:59.000Z"); // 11:59:59 PM
-//     await pageInit();
-//     expect(mockHourSelect.value).to.equal("0"); // Current hour is 23, so next hour is 0 (midnight)
-//   });
-// });
-
-import { chooseDefaultStartTime } from "../src/weather.js";
 
 describe("chooseDefaultStartTime", () => {
   it("should return '17' for a weekday (Monday)", () => {
