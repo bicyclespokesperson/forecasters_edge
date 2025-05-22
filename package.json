@@ -24,7 +24,9 @@
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-n": "^15.6.1",
     "eslint-plugin-promise": "^6.1.1",
+    "parcel": "^2.12.0",
     "postcss": "^8.4.21",
+    "push-dir": "^0.4.1",
     "shx": "^0.3.2",
     "suncalc": "^1.9.0",
     "typescript": "^5.0.2"
