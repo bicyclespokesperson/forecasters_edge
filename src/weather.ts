@@ -143,11 +143,23 @@ function createPopupContent(course: DiscGolfCourse): string {
   const score = course.getWeatherScore();
   const breakdown = score.breakdown;
   
-  // Create a simpler breakdown without the redundant formula
+  // Parse actual weather values from the summary
+  const summary = score.summary;
+  const precipMatch = summary.match(/precip \(mm\): ([\d.]+)/);
+  const precipProbMatch = summary.match(/precipProbability \(%\): ([\d.]+)/);
+  const windMatch = summary.match(/windSpeed \(mph\): ([\d.]+)/);
+  const tempMatch = summary.match(/temperature \(F\): ([\d.]+)/);
+  
+  const precipMm = precipMatch ? parseFloat(precipMatch[1]) : 0;
+  const precipProb = precipProbMatch ? parseFloat(precipProbMatch[1]) : 0;
+  const windMph = windMatch ? parseFloat(windMatch[1]) : 0;
+  const tempF = tempMatch ? parseFloat(tempMatch[1]) : 0;
+  
+  // Create detailed weather information with both actual values and percentages
   const factors = [
-    `☔ Precipitation: ${(100 - breakdown.Precipitation).toFixed(0)}% chance`,
-    `🌡️ Temperature: ${breakdown.Temperature.toFixed(0)}% comfort`,
-    `💨 Wind: ${breakdown.Wind.toFixed(0)}% calm`,
+    `☔ Precipitation: ${precipProb.toFixed(0)}% chance, ${precipMm.toFixed(1)}mm`,
+    `🌡️ Temperature: ${tempF.toFixed(0)}°F (${breakdown.Temperature.toFixed(0)}% comfort)`,
+    `💨 Wind: ${windMph.toFixed(0)} mph (${breakdown.Wind.toFixed(0)}% calm)`,
   ];
 
   return `
@@ -242,6 +254,23 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
         if (canvas && !canvas.dataset.chartInitialized) {
           try {
             const breakdown = course.getWeatherScore().breakdown;
+            
+            // Detect dark mode for better chart visibility
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const chartColors = isDarkMode ? {
+              backgroundColor: "rgba(100, 200, 255, 0.3)",
+              borderColor: "rgba(100, 200, 255, 1)",
+              pointBackgroundColor: "rgba(100, 200, 255, 1)",
+              pointBorderColor: "#fff",
+              gridColor: "rgba(255, 255, 255, 0.2)"
+            } : {
+              backgroundColor: "rgba(0, 123, 255, 0.2)",
+              borderColor: "rgba(0, 123, 255, 1)",
+              pointBackgroundColor: "rgba(0, 123, 255, 1)",
+              pointBorderColor: "#fff",
+              gridColor: "rgba(0, 0, 0, 0.1)"
+            };
+            
             new Chart(canvas, {
               type: "radar",
               data: {
@@ -253,10 +282,10 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                     breakdown.Wind || 0,
                     breakdown.Overall || 0
                   ],
-                  backgroundColor: "rgba(0, 123, 255, 0.2)",
-                  borderColor: "rgba(0, 123, 255, 1)",
-                  pointBackgroundColor: "rgba(0, 123, 255, 1)",
-                  pointBorderColor: "#fff",
+                  backgroundColor: chartColors.backgroundColor,
+                  borderColor: chartColors.borderColor,
+                  pointBackgroundColor: chartColors.pointBackgroundColor,
+                  pointBorderColor: chartColors.pointBorderColor,
                 }],
               },
               options: {
@@ -268,7 +297,16 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                     suggestedMin: 0,
                     suggestedMax: 100,
                     ticks: { display: false },
-                    pointLabels: { font: { size: 10 } },
+                    pointLabels: { 
+                      font: { size: 10 },
+                      color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'
+                    },
+                    grid: {
+                      color: chartColors.gridColor
+                    },
+                    angleLines: {
+                      color: chartColors.gridColor
+                    }
                   },
                 },
               },
