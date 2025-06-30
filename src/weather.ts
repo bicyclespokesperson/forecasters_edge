@@ -107,7 +107,10 @@ export class DiscGolfCourse {
   }
 }
 
-export function calcWeatherScore(weather: WeatherResponse, startHour: number): WeatherScore {
+export function calcWeatherScore(
+  weather: WeatherResponse,
+  startHour: number
+): WeatherScore {
   // Weather start time is in local time based on the lat/lon of the request
   const weatherStartTime = new Date(weather.hourly.time[0]);
 
@@ -433,6 +436,11 @@ function getDesiredCourseCount(): number {
   return Math.max(Math.min(desiredCourseCount, maxCourses), minCourses);
 }
 
+function getSelectedStartHour(): number {
+  const hourSelect = document.getElementById("hourSelect") as HTMLSelectElement;
+  return parseInt(hourSelect.value);
+}
+
 async function nearestCourses(): Promise<void> {
   const loc = await getUserLocation();
   if (!loc) {
@@ -455,9 +463,8 @@ async function nearestCourses(): Promise<void> {
       await Promise.all(
         courses.map(async (course) => {
           await fetchWeather(course.location).then((weather) => {
-            // TODO: Get startHour from the UI or a default value
-            const defaultStartHour = 9; // Example: 9 AM
-            course.setWeatherScore(calcWeatherScore(weather, defaultStartHour));
+            const startHour = getSelectedStartHour();
+            course.setWeatherScore(calcWeatherScore(weather, startHour));
           });
         })
       );
@@ -603,9 +610,11 @@ export function chooseDefaultStartTime(currentDate: Date): string {
   const dayOfWeek = currentDate.getDay(); // 0 (Sunday) to 6 (Saturday)
   const currentHour = currentDate.getHours();
 
-  if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    // Monday to Friday
     return "17"; // 5:00 PM
-  } else { // Saturday or Sunday
+  } else {
+    // Saturday or Sunday
     const nextHour = (currentHour + 1) % 24;
     return nextHour.toString();
   }
