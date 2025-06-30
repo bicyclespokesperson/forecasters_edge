@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import { Point } from "../src/weather.js";
-import { chooseDefaultStartTime } from "../src/weather.js";
+import { Point } from "../src/weather-core.js";
+import { chooseDefaultStartTime } from "../src/weather-core.js";
 
 describe("Point", () => {
   it("should correctly assign lat and lon values", () => {
@@ -23,7 +23,7 @@ import {
   WeatherResponse,
   WeatherScore,
   calcWeatherScore,
-} from "../src/weather.js";
+} from "../src/weather-core.js";
 
 // Helper function to create a mock WeatherResponse
 const createMockWeatherResponse = (
@@ -133,7 +133,7 @@ describe("calcWeatherScore", () => {
   });
 });
 
-import { distanceBetween } from "../src/weather.js";
+import { distanceBetween } from "../src/weather-core.js";
 
 describe("distanceBetween", () => {
   it("should return 0 for identical points", () => {
@@ -178,7 +178,7 @@ describe("distanceBetween", () => {
   });
 });
 
-import { DiscGolfCourse, toCourse } from "../src/weather.js";
+import { DiscGolfCourse, toCourse } from "../src/weather-core.js";
 
 describe("toCourse", () => {
   it("should correctly parse a valid CSV string into a DiscGolfCourse object", () => {

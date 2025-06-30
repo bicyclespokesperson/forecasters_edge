@@ -3,66 +3,71 @@
 
   <head>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Forecaster's Edge</title>
   </head>
 
   <body>
-    <script>0</script>
-    <title>Forecaster's Edge</title>
-    <h1>Forecaster's Edge</h1><br>
+    <div class="header">
+      <h1>Forecaster's Edge</h1>
+      
+      <div class="controls">
+        <div class="location-control">
+          <label for="userLatLon">Location:</label>
+          <input type="text" id="userLatLon" value="" autocomplete="off" placeholder="ZIP code or coordinates" title="Enter a ZIP Code or latitude/longitude coordinates">
+        </div>
+        
+        <div class="time-control">
+          <label for="timeSlider">Start Time:</label>
+          <div class="time-slider-container">
+            <input type="range" id="timeSlider" min="0" max="23" value="18" step="1">
+            <span id="timeDisplay">6:00 PM</span>
+          </div>
+        </div>
+        
+        <div class="course-control">
+          <button id="showMoreButton" style="display: none;">Show More Courses</button>
+          <span id="courseCount">Loading courses...</span>
+        </div>
+      </div>
+    </div>
 
-    <p>
-    <label >ZIP Code (or Latitude, Longitude coordinates): </label>
-    <input type="text" id="userLatLon" value="" autocomplete="off" title="Enter a ZIP Code or latitude/longitude coordinates">
+    <div class="main-content">
+      <div id="map"></div>
+      
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h3>Nearby Courses</h3>
+          <button id="toggleSidebar" class="toggle-btn">×</button>
+        </div>
+        
+        <div class="sort-controls">
+          <label>Sort by:</label>
+          <select id="sortSelect">
+            <option value="score">Weather Score</option>
+            <option value="distance">Distance</option>
+            <option value="name">Name</option>
+            <option value="holes">Holes</option>
+          </select>
+        </div>
+        
+        <div id="courseList" class="course-list">
+          <div class="loading">Finding nearby courses...</div>
+        </div>
+      </div>
+    </div>
 
-    <label for="hourSelect"> What time will the round start: </label>
-    <select name="startTime" id="hourSelect">
-      <option value="0">12:00 AM</option>
-      <option value="1">1:00 AM</option>
-      <option value="2">2:00 AM</option>
-      <option value="3">3:00 AM</option>
-      <option value="4">4:00 AM</option>
-      <option value="5">5:00 AM</option>
-      <option value="6">6:00 AM</option>
-      <option value="7">7:00 AM</option>
-      <option value="8">8:00 AM</option>
-      <option value="9">9:00 AM</option>
-      <option value="10">10:00 AM</option>
-      <option value="11">11:00 AM</option>
-      <option value="12">12:00 PM</option>
-      <option value="13">1:00 PM</option>
-      <option value="14">2:00 PM</option>
-      <option value="15">3:00 PM</option>
-      <option value="16">4:00 PM</option>
-      <option value="17">5:00 PM</option>
-      <option value="18" selected="selected">6:00 PM</option>
-      <option value="19">7:00 PM</option>
-      <option value="20">8:00 PM</option>
-      <option value="21">9:00 PM</option>
-      <option value="22">10:00 PM</option>
-      <option value="23">11:00 PM</option>
-    </select>
-    <br>
-    <label for="desiredCourseCount" id="courseCountLabel">Choose how many nearby courses to show:</label>
-    <input type="text" id="desiredCourseCount" value="10" title="Enter a number between 1 and 20">
-    <button id="nearestCoursesButton">Show Nearby Courses</button>
-    <br>
-    <p id="sunsetTime">Sunset today:</p>
-    <table id="nearbyCourses">
-      <thead>
-        <th>Course name</th>
-        <th>Weather Score (1-10)</th>
-        <th>Approximate Distance Away (miles)</th>
-        <th>Number of Holes</th>
-      </thead>
-      <tbody>
-        <tr>
-        </tr>
-      </tbody>
-    </table> 
-    </p>
+    <div id="sunsetTime" class="sunset-info">Sunset today:</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="./src/weather.ts" type="module"></script>
+    
     <footer>
       <p>  
       <a href="about.html">About Forecaster's Edge</a><br>
@@ -71,4 +76,3 @@
     </footer>
   </body>
 </html>
-

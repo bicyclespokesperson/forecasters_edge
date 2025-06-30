@@ -1,8 +1,44 @@
 import suncalc from "suncalc";
+import * as L from "leaflet";
+import "leaflet.markercluster";
+import {
+  Chart,
+  RadarController,
+  LineElement,
+  PointElement,
+  RadialLinearScale,
+  Filler,
+  Legend,
+  Title,
+} from "chart.js";
+import {
+  WeatherResponse,
+  Point,
+  DiscGolfCourse,
+  calcWeatherScore,
+  distanceBetween,
+  toCourse,
+  chooseDefaultStartTime,
+} from "./weather-core.js";
+
 const { getTimes } = suncalc;
 
-const mockWeatherRequests = false;
+Chart.register(
+  RadarController,
+  LineElement,
+  PointElement,
+  RadialLinearScale,
+  Filler,
+  Legend,
+  Title
+);
 
+// Use mocked weather requests during development/testing
+// Set to true to avoid hitting the weather API during development
+const mockWeatherRequests =
+  process.env.NODE_ENV === "test" ||
+  (typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("mock"));
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
 
@@ -10,205 +46,272 @@ const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
 const zipcodeLocations = new Map<string, Point>();
 let courses: Promise<DiscGolfCourse[]> | undefined;
 
-let currentSortColumn: string | null = null;
-let isAscending = true;
+let map: L.Map;
+let courseMarkers: L.MarkerClusterGroup;
 let displayedCourses: DiscGolfCourse[] = [];
+let currentSortColumn = "score";
+let isAscending = false;
+let maxCourses = 10;
+let userLocation: Point | undefined;
 
-export class WeatherResponse {
-  latitude: number;
-  longitude: number;
-  generationtime_ms: number;
-  utc_offset_seconds: number;
-  timezone: string;
-  timezone_abbreviation: string;
-  elevation: number;
-  hourly_units: {
-    time: string;
-    temperature_2m: string;
-    precipitation_probability: string;
-    precipitation: string;
-    windspeed_10m: string;
-  };
+function getScoreColor(score: number): string {
+  if (score >= 8) return "#28a745"; // excellent - green
+  if (score >= 6.5) return "#6db33f"; // good - light green
+  if (score >= 5) return "#ffc107"; // fair - yellow
+  if (score >= 3.5) return "#fd7e14"; // poor - orange
+  return "#dc3545"; // bad - red
+}
 
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    precipitation_probability: number[];
-    precipitation: number[];
-    windspeed_10m: number[];
-  };
+function getScoreClass(score: number): string {
+  if (score >= 8) return "score-excellent";
+  if (score >= 6.5) return "score-good";
+  if (score >= 5) return "score-fair";
+  if (score >= 3.5) return "score-poor";
+  return "score-bad";
+}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(data: any) {
-    this.latitude = data.latitude;
-    this.longitude = data.longitude;
-    this.generationtime_ms = data.generationtime_ms;
-    this.utc_offset_seconds = data.utc_offset_seconds;
-    this.timezone = data.timezone;
-    this.timezone_abbreviation = data.timezone_abbreviation;
-    this.elevation = data.elevation;
-    this.hourly_units = {
-      time: data.hourly_units.time,
-      temperature_2m: data.hourly_units.temperature_2m,
-      precipitation_probability: data.hourly_units.precipitation_probability,
-      precipitation: data.hourly_units.precipitation,
-      windspeed_10m: data.hourly_units.windspeed_10m,
-    };
-    this.hourly = {
-      time: data.hourly.time,
-      temperature_2m: data.hourly.temperature_2m,
-      precipitation_probability: data.hourly.precipitation_probability,
-      precipitation: data.hourly.precipitation,
-      windspeed_10m: data.hourly.windspeed_10m,
-    };
+function createCustomIcon(course: DiscGolfCourse): L.DivIcon {
+  const score = course.getWeatherScore().score;
+  const color = getScoreColor(score);
+
+  return L.divIcon({
+    html: `<div style="background-color: ${color}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${score.toFixed(
+      1
+    )}</div>`,
+    className: "custom-marker",
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+}
+
+function createRadarChart(course: DiscGolfCourse): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = 150;
+  canvas.height = 150;
+
+  const breakdown = course.getWeatherScore().breakdown;
+
+  new Chart(canvas, {
+    type: "radar",
+    data: {
+      labels: Object.keys(breakdown),
+      datasets: [
+        {
+          label: "Weather Factors",
+          data: Object.values(breakdown),
+          backgroundColor: "rgba(0, 123, 255, 0.2)",
+          borderColor: "rgba(0, 123, 255, 1)",
+          pointBackgroundColor: "rgba(0, 123, 255, 1)",
+          pointBorderColor: "#fff",
+          pointHoverBackgroundColor: "#fff",
+          pointHoverBorderColor: "rgba(0, 123, 255, 1)",
+        },
+      ],
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        r: {
+          angleLines: {
+            display: true,
+          },
+          suggestedMin: 0,
+          suggestedMax: 100,
+          ticks: {
+            display: false,
+          },
+          pointLabels: {
+            font: {
+              size: 10,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return canvas;
+}
+
+function createPopupContent(course: DiscGolfCourse): string {
+  const score = course.getWeatherScore();
+  const breakdown = score.breakdown;
+  
+  // Create a simpler breakdown without the redundant formula
+  const factors = [
+    `☔ Precipitation: ${(100 - breakdown.Precipitation).toFixed(0)}% chance`,
+    `🌡️ Temperature: ${breakdown.Temperature.toFixed(0)}% comfort`,
+    `💨 Wind: ${breakdown.Wind.toFixed(0)}% calm`,
+  ];
+
+  return `
+    <div class="popup-content">
+      <div class="popup-course-name">${course.name}</div>
+      <div class="popup-score">
+        <div class="weather-score ${getScoreClass(
+          score.score
+        )}">${score.score.toFixed(1)}</div>
+      </div>
+      <div class="popup-details">
+        <strong>Distance:</strong> ${(course.distanceAwayKm * kmToMile).toFixed(
+          0
+        )} miles<br>
+        <strong>Holes:</strong> ${course.numHoles}<br>
+      </div>
+      <div class="chart-container" id="chart-${course.name.replace(/\s+/g, '-').toLowerCase()}">
+        <canvas width="150" height="150"></canvas>
+      </div>
+      <div class="weather-factors">
+        ${factors.map(factor => `<div class="factor">${factor}</div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function initializeMap(): void {
+  console.log("🗺️ Initializing map...");
+
+  const mapContainer = document.getElementById("map");
+  if (!mapContainer) {
+    console.error("❌ Map container not found!");
+    return;
+  }
+
+  console.log("✅ Map container found:", mapContainer);
+  console.log(
+    "Map container dimensions:",
+    mapContainer.getBoundingClientRect()
+  );
+
+  try {
+    map = L.map("map").setView([39.8283, -98.5795], 4); // Center of US
+    console.log("✅ Leaflet map created");
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+    console.log("✅ Tile layer added");
+
+    courseMarkers = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: false,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+    });
+
+    map.addLayer(courseMarkers);
+    console.log("✅ Marker cluster group added");
+
+    // Force map to resize after a short delay
+    setTimeout(() => {
+      console.log("🔄 Forcing map resize...");
+      map.invalidateSize();
+    }, 100);
+  } catch (error) {
+    console.error("❌ Failed to initialize map:", error);
   }
 }
 
-export class Point {
-  constructor(public lat: number, public lon: number) {}
+function addCourseMarkers(courses: DiscGolfCourse[]): void {
+  courseMarkers.clearLayers();
 
-  toString(): string {
-    return `${this.lat.toFixed(maxDecimalPlaces)}, ${this.lon.toFixed(
-      maxDecimalPlaces
-    )}`;
-  }
-}
+  courses.forEach((course) => {
+    try {
+      const marker = L.marker([course.location.lat, course.location.lon], {
+        icon: createCustomIcon(course),
+      });
 
-export class WeatherScore {
-  constructor(public score: number, public summary: string) {}
-}
+      const popupContent = createPopupContent(course);
+      const popup = marker.bindPopup(popupContent, {
+        maxWidth: 280,
+        closeButton: true,
+      });
 
-export class DiscGolfCourse {
-  private weatherScore: WeatherScore | undefined = undefined;
+      // Initialize chart when popup opens
+      marker.on('popupopen', () => {
+        const chartId = `chart-${course.name.replace(/\s+/g, '-').toLowerCase()}`;
+        const chartContainer = document.getElementById(chartId);
+        const canvas = chartContainer?.querySelector('canvas');
+        
+        if (canvas && !canvas.dataset.chartInitialized) {
+          try {
+            const breakdown = course.getWeatherScore().breakdown;
+            new Chart(canvas, {
+              type: "radar",
+              data: {
+                labels: ['☔', '🌡️', '💨', '⭐'],
+                datasets: [{
+                  data: [
+                    breakdown.Precipitation || 0,
+                    breakdown.Temperature || 0, 
+                    breakdown.Wind || 0,
+                    breakdown.Overall || 0
+                  ],
+                  backgroundColor: "rgba(0, 123, 255, 0.2)",
+                  borderColor: "rgba(0, 123, 255, 1)",
+                  pointBackgroundColor: "rgba(0, 123, 255, 1)",
+                  pointBorderColor: "#fff",
+                }],
+              },
+              options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  r: {
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: { display: false },
+                    pointLabels: { font: { size: 10 } },
+                  },
+                },
+              },
+            });
+            canvas.dataset.chartInitialized = 'true';
+          } catch (error) {
+            console.warn(`Failed to create chart for ${course.name}:`, error);
+          }
+        }
+      });
 
-  public distanceAwayKm = NaN;
-
-  constructor(
-    public name: string,
-    public numHoles: number,
-    public location: Point
-  ) {}
-
-  public setWeatherScore(weatherScore: WeatherScore): void {
-    this.weatherScore = weatherScore;
-  }
-
-  public getWeatherScore(): WeatherScore {
-    if (!this.weatherScore) {
-      throw new Error(`Weather score undefined for ${this.name}`);
+      course.marker = marker;
+      courseMarkers.addLayer(marker);
+    } catch (error) {
+      console.warn(`Could not create marker for ${course.name}:`, error);
     }
-    return this.weatherScore;
-  }
+  });
+}
 
-  public toString(): string {
-    return `${this.name},${this.numHoles},${this.location.toString()},${
-      this.weatherScore
-    }`;
+function updateTimeDisplay(): void {
+  const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
+  const timeDisplay = document.getElementById("timeDisplay") as HTMLSpanElement;
+
+  if (timeSlider && timeDisplay) {
+    const hour = parseInt(timeSlider.value);
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const ampm = hour < 12 ? "AM" : "PM";
+    timeDisplay.textContent = `${displayHour}:00 ${ampm}`;
   }
 }
 
-export function calcWeatherScore(
-  weather: WeatherResponse,
-  startHour: number
-): WeatherScore {
-  // Weather start time is in local time based on the lat/lon of the request
-  const weatherStartTime = new Date(weather.hourly.time[0]);
-
-  if (!(startHour >= 0 && startHour <= 23)) {
-    throw new Error("Invalid start hour");
-  }
-
-  // Assume the round start time matches course's local time
-  const roundStartTime = new Date(weatherStartTime.valueOf());
-  roundStartTime.setHours(startHour);
-  roundStartTime.setMinutes(0);
-  roundStartTime.setSeconds(0);
-  roundStartTime.setMilliseconds(0);
-
-  // Calculate how far into the hours array to look for the forecasted hourly weather.
-  const offsetHours = Math.floor(
-    (roundStartTime.valueOf() - weatherStartTime.valueOf()) / (1000 * 60 * 60)
-  );
-
-  if (offsetHours >= weather.hourly.precipitation_probability.length) {
-    throw new Error(
-      `Insufficient weather data. Needed ${offsetHours + 1} hours, got ${
-        weather.hourly.precipitation_probability.length
-      }.`
-    );
-  }
-
-  const expectedRoundLength = 3;
-
-  // isPreceeding = true means that the value is for the previous hour, not the instant value.
-  // For example, since total precipitation is for the previous hour, we want arr[7:00] for a round
-  // that starts at 6:00, since that value is how much it is expected to rain between 6:00 and 7:00.
-  const avgValue = (arr: number[], isPreceeding: boolean): number => {
-    const offset = Math.min(offsetHours + (isPreceeding ? 1 : 0), 23);
-    const duringRound = arr.slice(offset, offset + expectedRoundLength);
-    return duringRound.reduce((a, b) => a + b) / duringRound.length;
-  };
-
-  const precip = avgValue(weather.hourly.precipitation, true);
-  const precipProbability = avgValue(
-    weather.hourly.precipitation_probability,
-    true
-  );
-  const temperature = avgValue(weather.hourly.temperature_2m, false);
-  const windSpeed = avgValue(weather.hourly.windspeed_10m, true) * kmToMile;
-
-  // Slight penalty if the temperature isn't in this range
-  const minBestTemperatureF = 45;
-  const maxBestTemperatureF = 82;
-  const maxBestWindSpeedMPH = 25;
-
-  const precipProbabilityScore = (1 - precipProbability / 100) * 2.5;
-
-  // Any precipitation means there will be substantial rain
-  const precipScore = Math.max(7.5 - 2.7 * precip, 0);
-  const tempPenalty =
-    (Math.max(minBestTemperatureF - temperature, 0) +
-      Math.max(temperature - maxBestTemperatureF, 0)) /
-    3;
-
-  const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
-  const score = Math.max(
-    precipScore + precipProbabilityScore - tempPenalty - windPenalty,
-    1
-  );
-
-  // Calculate the weather score
-  const components = `precip (mm): ${precip.toFixed(
-    1
-  )}, precipProbability (%): ${precipProbability.toFixed(
-    1
-  )}, windSpeed (mph): ${windSpeed.toFixed(
-    1
-  )}, temperature (F): ${temperature.toFixed(1)}`;
-
-  const formula = `(${precipScore.toFixed(
-    1
-  )} precip score) + (${precipProbabilityScore.toFixed(
-    1
-  )} precip probability score) - (${tempPenalty.toFixed(
-    1
-  )} temperature score) - (${windPenalty.toFixed(
-    1
-  )} wind score) = ${score.toFixed(1)}`;
-  return new WeatherScore(score, components + "\n\n" + formula);
+function getSelectedStartHour(): number {
+  const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
+  return timeSlider ? parseInt(timeSlider.value) : 18;
 }
 
-function sortCourses(column: string): void {
-  if (column === currentSortColumn) {
-    isAscending = !isAscending;
-  } else {
-    currentSortColumn = column;
-    isAscending = true;
-  }
-
-  displayedCourses.sort((a, b) => {
+function sortCourses(
+  courses: DiscGolfCourse[],
+  column: string
+): DiscGolfCourse[] {
+  const sorted = [...courses].sort((a, b) => {
     let comparison = 0;
-    switch (currentSortColumn) {
+    switch (column) {
       case "name":
         comparison = a.name.localeCompare(b.name);
         break;
@@ -225,60 +328,126 @@ function sortCourses(column: string): void {
     return isAscending ? comparison : -comparison;
   });
 
-  // Update header classes
-  const headers = document.querySelectorAll("#nearbyCourses thead th");
-  headers.forEach((th) => {
-    th.classList.remove("sort-asc", "sort-desc");
-  });
+  return sorted;
+}
 
-  if (currentSortColumn) {
-    const activeHeader = document.querySelector(
-      `#nearbyCourses thead th[data-column="${currentSortColumn}"]`
-    );
-    if (activeHeader) {
-      activeHeader.classList.add(isAscending ? "sort-asc" : "sort-desc");
-    }
+function updateCourseList(courses: DiscGolfCourse[]): void {
+  const courseList = document.getElementById("courseList");
+  if (!courseList) return;
+
+  if (courses.length === 0) {
+    courseList.innerHTML = '<div class="loading">No courses found</div>';
+    return;
   }
 
-  updateCoursesTable(displayedCourses);
+  const sortedCourses = sortCourses(courses, currentSortColumn);
+
+  courseList.innerHTML = "";
+
+  sortedCourses.forEach((course) => {
+    const courseCard = document.createElement("div");
+    courseCard.className = "course-card";
+
+    const score = course.getWeatherScore();
+
+    courseCard.innerHTML = `
+      <div class="course-name">${course.name}</div>
+      <div class="course-details">
+        <span>${(course.distanceAwayKm * kmToMile).toFixed(0)} miles</span>
+        <span>${course.numHoles} holes</span>
+        <div class="weather-score ${getScoreClass(
+          score.score
+        )}">${score.score.toFixed(1)}</div>
+      </div>
+    `;
+
+    courseCard.addEventListener("click", () => {
+      if (course.marker) {
+        map.setView([course.location.lat, course.location.lon], 13);
+        course.marker.openPopup();
+      }
+    });
+
+    courseList.appendChild(courseCard);
+  });
+
+  // Update course count
+  const courseCount = document.getElementById("courseCount");
+  if (courseCount) {
+    courseCount.textContent = `Showing ${courses.length} courses`;
+  }
 }
 
 async function fetchWeather(loc: Point): Promise<WeatherResponse> {
   const timezone = "auto";
-
-  // Use Open-Meteo API to fetch the weather forecast for a particular location
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=temperature_2m,precipitation_probability,precipitation,windspeed_10m&temperature_unit=fahrenheit&forecast_days=1&timezone=${timezone}`;
 
-  // We don't need to fetch a new weather report if we already have one from nearby
+  // Cache weather requests within 10 miles to avoid redundant API calls
   const sameWeatherThresholdMiles = 10;
 
+  // Check cache for nearby weather reports
   if (weatherPool.length > 0) {
+    console.log(
+      `Checking weather cache for ${loc.toString()} (${
+        weatherPool.length
+      } cached locations)`
+    );
+
     const closestExisting = weatherPool.reduce((a, b) => {
       return distanceBetween(a[0], loc) < distanceBetween(b[0], loc) ? a : b;
     });
     const milesApart = distanceBetween(loc, closestExisting[0]) * kmToMile;
+
     if (milesApart < sameWeatherThresholdMiles) {
       console.log(
-        `Returned cached weather report for ${loc.toString()}. (${milesApart.toFixed(
+        `✅ Using cached weather report for ${loc.toString()}. (${milesApart.toFixed(
           1
-        )} miles away from ${closestExisting[0].toString()})`
+        )} miles from cached location ${closestExisting[0].toString()})`
       );
-      return closestExisting[1];
+      return await closestExisting[1];
+    } else {
+      console.log(
+        `❌ Cache miss: Closest cached location is ${milesApart.toFixed(
+          1
+        )} miles away (threshold: ${sameWeatherThresholdMiles} miles)`
+      );
     }
   }
 
-  console.log(`Fetching weather for ${loc.toString()}`);
+  if (mockWeatherRequests) {
+    console.log(`🧪 Using MOCK weather data for ${loc.toString()}`);
+  } else {
+    console.log(`🌤️ Fetching REAL weather data for ${loc.toString()}`);
+  }
 
   const weather: Promise<WeatherResponse> = (async () => {
-    if (mockWeatherRequests) {
+    try {
+      if (mockWeatherRequests) {
+        return await fetchWeatherMock(loc);
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(
+          `Weather API error: ${response.status} ${response.statusText}`
+        );
+      }
+      const data = await response.json();
+      return new WeatherResponse(data);
+    } catch (error) {
+      console.error(`Failed to fetch weather for ${loc.toString()}:`, error);
+      // Fallback to mock data if real API fails
+      console.log(`🔄 Falling back to mock weather data for ${loc.toString()}`);
       return await fetchWeatherMock(loc);
     }
-
-    return await fetch(url)
-      .then(async (response) => await response.json())
-      .then((val) => new WeatherResponse(val));
   })();
+
   weatherPool.push([loc, weather]);
+  console.log(
+    `📦 Cached weather request for ${loc.toString()} (cache size: ${
+      weatherPool.length
+    })`
+  );
 
   return await weather;
 }
@@ -293,11 +462,9 @@ async function fetchWeatherMock(_p: Point): Promise<WeatherResponse> {
 
 function countDecimalPlaces(n: string): number {
   const parts = n.split(".");
-
   if (parts.length === 1) {
     return 0;
   }
-
   return parts[1].length;
 }
 
@@ -316,31 +483,9 @@ function onLocationUpdated(): void {
   }
 }
 
-// Haversine formula to get the distance between two points
-export function distanceBetween(point1: Point, point2: Point): number {
-  const earthRadiusKm = 6371;
-  const dLat = degToRad(point2.lat - point1.lat);
-  const dLng = degToRad(point2.lon - point1.lon);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(degToRad(point1.lat)) *
-      Math.cos(degToRad(point2.lat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = earthRadiusKm * c; // Distance in km
-  return d;
-}
-
-function degToRad(deg: number): number {
-  return deg * (Math.PI / 180);
-}
-
 async function getBrowserLocation(): Promise<Point> {
   return await new Promise((resolve, reject) => {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!navigator.geolocation) {
-      // eslint-disable-next-line prefer-promise-reject-errors
       reject("Geolocation is not supported by this browser.");
     }
 
@@ -351,7 +496,6 @@ async function getBrowserLocation(): Promise<Point> {
         resolve(userLocation);
       },
       (error) => {
-        // eslint-disable-next-line prefer-promise-reject-errors
         reject(`Unable to retrieve user location: ${error.message}`);
       }
     );
@@ -396,7 +540,6 @@ async function getUserLocation(): Promise<Point | undefined> {
 
       result = p;
     } else {
-      // Remove suffix from zipcodes of the form 12345-4545
       if (locationInput.includes("-")) {
         locationInput = locationInput.substring(0, locationInput.indexOf("-"));
       }
@@ -426,101 +569,64 @@ async function getUserLocation(): Promise<Point | undefined> {
   return result;
 }
 
-function getDesiredCourseCount(): number {
-  const desiredCourseCount = parseInt(
-    (document.getElementById("desiredCourseCount") as HTMLInputElement).value
-  );
-
-  const minCourses = 1;
-  const maxCourses = 20;
-  return Math.max(Math.min(desiredCourseCount, maxCourses), minCourses);
-}
-
-function getSelectedStartHour(): number {
-  const hourSelect = document.getElementById("hourSelect") as HTMLSelectElement;
-  return parseInt(hourSelect.value);
-}
-
-async function nearestCourses(): Promise<void> {
+async function loadNearestCourses(): Promise<void> {
   const loc = await getUserLocation();
   if (!loc) {
     return;
   }
 
+  userLocation = loc;
   console.log(`Determining weather at courses near ${loc.toString()}`);
 
-  void fetchCourses()
-    .then(async (courses) => {
-      courses = courses.filter((course) => course.numHoles >= 18);
-      courses.forEach(
-        (course) =>
-          (course.distanceAwayKm = distanceBetween(course.location, loc))
-      );
-      courses.sort((c1, c2) => c1.distanceAwayKm - c2.distanceAwayKm);
-      const n = getDesiredCourseCount();
-      courses = courses.slice(0, n);
+  void fetchCourses().then(async (courses) => {
+    courses = courses.filter((course) => course.numHoles >= 18);
+    courses.forEach(
+      (course) =>
+        (course.distanceAwayKm = distanceBetween(course.location, loc))
+    );
+    courses.sort((c1, c2) => c1.distanceAwayKm - c2.distanceAwayKm);
+    courses = courses.slice(0, maxCourses);
 
-      await Promise.all(
-        courses.map(async (course) => {
-          await fetchWeather(course.location).then((weather) => {
-            const startHour = getSelectedStartHour();
-            course.setWeatherScore(calcWeatherScore(weather, startHour));
-          });
-        })
-      );
+    const courseList = document.getElementById("courseList");
+    if (courseList) {
+      courseList.innerHTML =
+        '<div class="loading">Loading weather data...</div>';
+    }
 
-      courses.sort(
-        (c1, c2) => c2.getWeatherScore().score - c1.getWeatherScore().score
-      );
+    await Promise.all(
+      courses.map(async (course) => {
+        await fetchWeather(course.location).then((weather) => {
+          const startHour = getSelectedStartHour();
+          course.setWeatherScore(calcWeatherScore(weather, startHour));
+        });
+      })
+    );
 
-      // Update displayedCourses with the fetched and initially sorted courses
-      displayedCourses = courses;
-      return courses;
-    })
-    // Pass displayedCourses to updateCoursesTable
-    .then(() => updateCoursesTable(displayedCourses));
+    courses.sort(
+      (c1, c2) => c2.getWeatherScore().score - c1.getWeatherScore().score
+    );
+
+    displayedCourses = courses;
+    addCourseMarkers(courses);
+    updateCourseList(courses);
+
+    // Center map on user location with appropriate zoom
+    if (courses.length > 0) {
+      const markers = courses.map((c) => c.marker!).filter((m) => m);
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.1));
+    } else {
+      map.setView([loc.lat, loc.lon], 10);
+    }
+
+    // Show "Show More" button
+    const showMoreButton = document.getElementById("showMoreButton");
+    if (showMoreButton && maxCourses === 10) {
+      showMoreButton.style.display = "block";
+    }
+  });
 
   updateSunsetTime(loc);
-}
-
-function updateCoursesTable(courses: DiscGolfCourse[]): void {
-  const table = document
-    .getElementById("nearbyCourses")
-    ?.getElementsByTagName("tbody")[0];
-  if (table == null) {
-    return;
-  }
-
-  // Clear existing courses
-  table.innerHTML = "";
-
-  for (const course of courses) {
-    const newRow = table.insertRow();
-    newRow.insertCell().innerHTML = course.name;
-
-    const scoreCell = newRow.insertCell();
-    scoreCell.innerHTML = course.getWeatherScore().score.toFixed(1);
-    scoreCell.addEventListener("click", (event: Event) => {
-      const clickedCell = event.target as HTMLTableCellElement;
-
-      if (!clearInfoPopups()) {
-        const span = document.createElement("span");
-        span.textContent = course.getWeatherScore().summary;
-        span.className = "more_info";
-        clickedCell.appendChild(span);
-      }
-      event.stopPropagation();
-    });
-
-    scoreCell.title = course.getWeatherScore().summary;
-
-    // Round to nearest 5, since the user's zipcode isn't very precise
-    newRow.insertCell().innerHTML = (
-      Math.round((course.distanceAwayKm * kmToMile) / 5) * 5
-    ).toFixed(0);
-
-    newRow.insertCell().innerHTML = course.numHoles.toFixed(0);
-  }
 }
 
 function updateSunsetTime(loc: Point) {
@@ -530,7 +636,6 @@ function updateSunsetTime(loc: Point) {
   }
 
   const today = new Date();
-
   const sunInfo = getTimes(today, loc.lat, loc.lon);
 
   const formattedTime = sunInfo.sunset.toLocaleTimeString("en-US", {
@@ -539,42 +644,6 @@ function updateSunsetTime(loc: Point) {
     hour12: true,
   });
   sunsetParagraph.textContent = `Sunset today: ${formattedTime}`;
-}
-
-function clearInfoPopups(): boolean {
-  const table = document
-    .getElementById("nearbyCourses")
-    ?.getElementsByTagName("tbody")[0];
-  if (table == null) {
-    return false;
-  }
-
-  let removedAny = false;
-  for (const row of table.rows) {
-    for (const childCell of row.cells) {
-      const childElement = childCell.querySelector(".more_info") as HTMLElement;
-      if (childElement) {
-        const duration_ms = 150;
-        childElement.style.animation = `fadeOut linear ${duration_ms}ms`;
-        setTimeout(() => {
-          childCell.removeChild(childElement);
-        }, duration_ms);
-        removedAny = true;
-      }
-    }
-  }
-
-  return removedAny;
-}
-
-export function toCourse(line: string): DiscGolfCourse {
-  const delimiter = ",";
-  const sp = line.split(delimiter);
-  return new DiscGolfCourse(
-    sp[0],
-    parseInt(sp[1]),
-    new Point(parseFloat(sp[2]), parseFloat(sp[3]))
-  );
 }
 
 async function fetchCourses(): Promise<DiscGolfCourse[]> {
@@ -588,9 +657,6 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
 
   const currentDate = new Date();
   const weekNumber = getWeekNumber(currentDate);
-
-  // Make sure the CSV is downloaded fresh at least every week (not cached)
-  // by making the URL unique
   const filePath = "data/usa_courses.csv?v=" + weekNumber;
 
   if (!courses) {
@@ -606,61 +672,96 @@ async function fetchCourses(): Promise<DiscGolfCourse[]> {
   return await courses;
 }
 
-export function chooseDefaultStartTime(currentDate: Date): string {
-  const dayOfWeek = currentDate.getDay(); // 0 (Sunday) to 6 (Saturday)
-  const currentHour = currentDate.getHours();
-
-  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-    // Monday to Friday
-    return "17"; // 5:00 PM
-  } else {
-    // Saturday or Sunday
-    const nextHour = (currentHour + 1) % 24;
-    return nextHour.toString();
-  }
-}
-
 async function pageInit(): Promise<void> {
-  document.addEventListener("click", clearInfoPopups);
-  document.addEventListener("touchStart", clearInfoPopups);
+  console.log("🚀 Starting page initialization...");
 
-  (document.getElementById("userLatLon") as HTMLInputElement).value = (
-    await getBrowserLocation().catch((_err) => new Point(33.6458, -82.2888))
-  ).toString();
-
-  // Set default start time using the new refactored function
-  const hourSelect = document.getElementById("hourSelect") as HTMLSelectElement;
-  if (hourSelect) {
-    const defaultStartTimeValue = chooseDefaultStartTime(new Date());
-    hourSelect.value = defaultStartTimeValue;
+  // Wait for DOM to be fully loaded
+  if (document.readyState === "loading") {
+    console.log("⏳ Waiting for DOM to load...");
+    await new Promise((resolve) => {
+      document.addEventListener("DOMContentLoaded", resolve);
+    });
   }
 
-  const nearestCoursesButton = document.getElementById("nearestCoursesButton");
-  nearestCoursesButton?.addEventListener("click", nearestCourses);
-
-  const locationInputBox = document.getElementById(
-    "userLatLon"
-  ) as HTMLInputElement;
-  locationInputBox?.addEventListener("change", onLocationUpdated);
-
-  const tableHeaders = document
-    .getElementById("nearbyCourses")
-    ?.getElementsByTagName("thead")[0]
-    ?.getElementsByTagName("th");
-
-  if (tableHeaders) {
-    const columnMappings = ["name", "score", "distance", "holes"];
-    for (let i = 0; i < tableHeaders.length; i++) {
-      const header = tableHeaders[i];
-      const columnName = columnMappings[i];
-      if (columnName) {
-        header.dataset.column = columnName;
-        header.addEventListener("click", () => sortCourses(columnName));
-      }
+  // Show mock mode indicator if enabled
+  if (mockWeatherRequests) {
+    console.log("🧪 MOCK MODE: Using sample weather data instead of live API");
+    const header = document.querySelector(".header h1") as HTMLElement;
+    if (header) {
+      header.textContent = "Forecaster's Edge (MOCK MODE)";
+      header.style.color = "#ff6b35";
     }
   }
+
+  // Initialize map after ensuring DOM is ready
+  console.log("📍 Initializing map...");
+  initializeMap();
+
+  // Auto-detect location and set default
+  try {
+    const browserLocation = await getBrowserLocation();
+    const locationInput = document.getElementById(
+      "userLatLon"
+    ) as HTMLInputElement;
+    locationInput.value = browserLocation.toString();
+  } catch (error) {
+    console.warn("Could not get browser location:", error);
+    const locationInput = document.getElementById(
+      "userLatLon"
+    ) as HTMLInputElement;
+    locationInput.value = new Point(33.6458, -82.2888).toString(); // Default location
+  }
+
+  // Set default start time
+  const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
+  if (timeSlider) {
+    const defaultStartTimeValue = chooseDefaultStartTime(new Date());
+    timeSlider.value = defaultStartTimeValue;
+    updateTimeDisplay();
+  }
+
+  // Event listeners
+  const locationInput = document.getElementById(
+    "userLatLon"
+  ) as HTMLInputElement;
+  locationInput?.addEventListener("change", onLocationUpdated);
+  locationInput?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      loadNearestCourses();
+    }
+  });
+
+  timeSlider?.addEventListener("input", () => {
+    updateTimeDisplay();
+    if (displayedCourses.length > 0 && userLocation) {
+      // Reload weather scores with new time
+      loadNearestCourses();
+    }
+  });
+
+  const sortSelect = document.getElementById("sortSelect") as HTMLSelectElement;
+  sortSelect?.addEventListener("change", (e) => {
+    const target = e.target as HTMLSelectElement;
+    if (currentSortColumn === target.value) {
+      isAscending = !isAscending;
+    } else {
+      currentSortColumn = target.value;
+      isAscending = target.value === "score" ? false : true;
+    }
+    updateCourseList(displayedCourses);
+  });
+
+  const showMoreButton = document.getElementById("showMoreButton");
+  showMoreButton?.addEventListener("click", () => {
+    maxCourses = 20;
+    showMoreButton.style.display = "none";
+    loadNearestCourses();
+  });
+
+  // Auto-load courses
+  await loadNearestCourses();
 }
 
-export { pageInit }; // Export chooseDefaultStartTime via its function definition
+export { pageInit };
 
 void pageInit();
