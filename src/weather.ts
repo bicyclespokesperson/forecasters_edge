@@ -42,6 +42,11 @@ const mockWeatherRequests =
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
 
+function pluralizeMiles(distance: number): string {
+  const rounded = Math.round(distance);
+  return rounded === 1 ? "mile" : "miles";
+}
+
 const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
 const zipcodeLocations = new Map<string, Point>();
 let courses: Promise<DiscGolfCourse[]> | undefined;
@@ -173,7 +178,7 @@ function createPopupContent(course: DiscGolfCourse): string {
       <div class="popup-details">
         <strong>Distance:</strong> ${(course.distanceAwayKm * kmToMile).toFixed(
           0
-        )} miles<br>
+        )} ${pluralizeMiles(course.distanceAwayKm * kmToMile)}<br>
         <strong>Holes:</strong> ${course.numHoles}<br>
       </div>
       <div class="chart-container" id="chart-${course.name.replace(/\s+/g, '-').toLowerCase()}">
@@ -243,6 +248,8 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
       const popup = marker.bindPopup(popupContent, {
         maxWidth: 280,
         closeButton: true,
+        autoPan: true,
+        autoPanPadding: [20, 20],
       });
 
       // Initialize chart when popup opens
@@ -391,7 +398,7 @@ function updateCourseList(courses: DiscGolfCourse[]): void {
     courseCard.innerHTML = `
       <div class="course-name">${course.name}</div>
       <div class="course-details">
-        <span>${(course.distanceAwayKm * kmToMile).toFixed(0)} miles</span>
+        <span>${(course.distanceAwayKm * kmToMile).toFixed(0)} ${pluralizeMiles(course.distanceAwayKm * kmToMile)}</span>
         <span>${course.numHoles} holes</span>
         <div class="weather-score ${getScoreClass(
           score.score
@@ -795,6 +802,7 @@ async function pageInit(): Promise<void> {
     showMoreButton.style.display = "none";
     loadNearestCourses();
   });
+
 
   // Auto-load courses
   await loadNearestCourses();
