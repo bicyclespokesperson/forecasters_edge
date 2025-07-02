@@ -18,7 +18,7 @@ import {
   calcWeatherScore,
   distanceBetween,
   toCourse,
-  chooseDefaultStartTime,
+  selectDefaultStartTime,
 } from "./weather-core.js";
 
 const { getTimes } = suncalc;
@@ -147,23 +147,27 @@ function createRadarChart(course: DiscGolfCourse): HTMLCanvasElement {
 function createPopupContent(course: DiscGolfCourse): string {
   const score = course.getWeatherScore();
   const breakdown = score.breakdown;
-  
+
   // Parse actual weather values from the summary
   const summary = score.summary;
   const precipMatch = summary.match(/precip \(mm\): ([\d.]+)/);
   const precipProbMatch = summary.match(/precipProbability \(%\): ([\d.]+)/);
   const windMatch = summary.match(/windSpeed \(mph\): ([\d.]+)/);
   const tempMatch = summary.match(/temperature \(F\): ([\d.]+)/);
-  
+
   const precipMm = precipMatch ? parseFloat(precipMatch[1]) : 0;
   const precipProb = precipProbMatch ? parseFloat(precipProbMatch[1]) : 0;
   const windMph = windMatch ? parseFloat(windMatch[1]) : 0;
   const tempF = tempMatch ? parseFloat(tempMatch[1]) : 0;
-  
+
   // Create detailed weather information with both actual values and percentages
   const factors = [
-    `☔ Precipitation: ${precipProb.toFixed(0)}% chance, ${precipMm.toFixed(1)}mm`,
-    `🌡️ Temperature: ${tempF.toFixed(0)}°F (${breakdown.Temperature.toFixed(0)}% comfort)`,
+    `☔ Precipitation: ${precipProb.toFixed(0)}% chance, ${precipMm.toFixed(
+      1
+    )}mm`,
+    `🌡️ Temperature: ${tempF.toFixed(0)}°F (${breakdown.Temperature.toFixed(
+      0
+    )}% comfort)`,
     `💨 Wind: ${windMph.toFixed(0)} mph (${breakdown.Wind.toFixed(0)}% calm)`,
   ];
 
@@ -181,11 +185,15 @@ function createPopupContent(course: DiscGolfCourse): string {
         )} ${pluralizeMiles(course.distanceAwayKm * kmToMile)}<br>
         <strong>Holes:</strong> ${course.numHoles}<br>
       </div>
-      <div class="chart-container" id="chart-${course.name.replace(/\s+/g, '-').toLowerCase()}">
+      <div class="chart-container" id="chart-${course.name
+        .replace(/\s+/g, "-")
+        .toLowerCase()}">
         <canvas width="150" height="150"></canvas>
       </div>
       <div class="weather-factors">
-        ${factors.map(factor => `<div class="factor">${factor}</div>`).join('')}
+        ${factors
+          .map((factor) => `<div class="factor">${factor}</div>`)
+          .join("")}
       </div>
     </div>
   `;
@@ -253,47 +261,55 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
       });
 
       // Initialize chart when popup opens
-      marker.on('popupopen', () => {
-        const chartId = `chart-${course.name.replace(/\s+/g, '-').toLowerCase()}`;
+      marker.on("popupopen", () => {
+        const chartId = `chart-${course.name
+          .replace(/\s+/g, "-")
+          .toLowerCase()}`;
         const chartContainer = document.getElementById(chartId);
-        const canvas = chartContainer?.querySelector('canvas');
-        
+        const canvas = chartContainer?.querySelector("canvas");
+
         if (canvas && !canvas.dataset.chartInitialized) {
           try {
             const breakdown = course.getWeatherScore().breakdown;
-            
+
             // Detect dark mode for better chart visibility
-            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const chartColors = isDarkMode ? {
-              backgroundColor: "rgba(100, 200, 255, 0.3)",
-              borderColor: "rgba(100, 200, 255, 1)",
-              pointBackgroundColor: "rgba(100, 200, 255, 1)",
-              pointBorderColor: "#fff",
-              gridColor: "rgba(255, 255, 255, 0.2)"
-            } : {
-              backgroundColor: "rgba(0, 123, 255, 0.2)",
-              borderColor: "rgba(0, 123, 255, 1)",
-              pointBackgroundColor: "rgba(0, 123, 255, 1)",
-              pointBorderColor: "#fff",
-              gridColor: "rgba(0, 0, 0, 0.1)"
-            };
-            
+            const isDarkMode =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const chartColors = isDarkMode
+              ? {
+                  backgroundColor: "rgba(100, 200, 255, 0.3)",
+                  borderColor: "rgba(100, 200, 255, 1)",
+                  pointBackgroundColor: "rgba(100, 200, 255, 1)",
+                  pointBorderColor: "#fff",
+                  gridColor: "rgba(255, 255, 255, 0.2)",
+                }
+              : {
+                  backgroundColor: "rgba(0, 123, 255, 0.2)",
+                  borderColor: "rgba(0, 123, 255, 1)",
+                  pointBackgroundColor: "rgba(0, 123, 255, 1)",
+                  pointBorderColor: "#fff",
+                  gridColor: "rgba(0, 0, 0, 0.1)",
+                };
+
             new Chart(canvas, {
               type: "radar",
               data: {
-                labels: ['☔', '🌡️', '💨', '⭐'],
-                datasets: [{
-                  data: [
-                    breakdown.Precipitation || 0,
-                    breakdown.Temperature || 0, 
-                    breakdown.Wind || 0,
-                    breakdown.Overall || 0
-                  ],
-                  backgroundColor: chartColors.backgroundColor,
-                  borderColor: chartColors.borderColor,
-                  pointBackgroundColor: chartColors.pointBackgroundColor,
-                  pointBorderColor: chartColors.pointBorderColor,
-                }],
+                labels: ["☔", "🌡️", "💨", "⭐"],
+                datasets: [
+                  {
+                    data: [
+                      breakdown.Precipitation || 0,
+                      breakdown.Temperature || 0,
+                      breakdown.Wind || 0,
+                      breakdown.Overall || 0,
+                    ],
+                    backgroundColor: chartColors.backgroundColor,
+                    borderColor: chartColors.borderColor,
+                    pointBackgroundColor: chartColors.pointBackgroundColor,
+                    pointBorderColor: chartColors.pointBorderColor,
+                  },
+                ],
               },
               options: {
                 responsive: false,
@@ -304,21 +320,23 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                     suggestedMin: 0,
                     suggestedMax: 100,
                     ticks: { display: false },
-                    pointLabels: { 
+                    pointLabels: {
                       font: { size: 10 },
-                      color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'
+                      color: isDarkMode
+                        ? "rgba(255, 255, 255, 0.8)"
+                        : "rgba(0, 0, 0, 0.8)",
                     },
                     grid: {
-                      color: chartColors.gridColor
+                      color: chartColors.gridColor,
                     },
                     angleLines: {
-                      color: chartColors.gridColor
-                    }
+                      color: chartColors.gridColor,
+                    },
                   },
                 },
               },
             });
-            canvas.dataset.chartInitialized = 'true';
+            canvas.dataset.chartInitialized = "true";
           } catch (error) {
             console.warn(`Failed to create chart for ${course.name}:`, error);
           }
@@ -398,7 +416,9 @@ function updateCourseList(courses: DiscGolfCourse[]): void {
     courseCard.innerHTML = `
       <div class="course-name">${course.name}</div>
       <div class="course-details">
-        <span>${(course.distanceAwayKm * kmToMile).toFixed(0)} ${pluralizeMiles(course.distanceAwayKm * kmToMile)}</span>
+        <span>${(course.distanceAwayKm * kmToMile).toFixed(0)} ${pluralizeMiles(
+      course.distanceAwayKm * kmToMile
+    )}</span>
         <span>${course.numHoles} holes</span>
         <div class="weather-score ${getScoreClass(
           score.score
@@ -760,7 +780,7 @@ async function pageInit(): Promise<void> {
   // Set default start time
   const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
   if (timeSlider) {
-    const defaultStartTimeValue = chooseDefaultStartTime(new Date());
+    const defaultStartTimeValue = selectDefaultStartTime(new Date());
     timeSlider.value = defaultStartTimeValue;
     updateTimeDisplay();
   }
@@ -802,7 +822,6 @@ async function pageInit(): Promise<void> {
     showMoreButton.style.display = "none";
     loadNearestCourses();
   });
-
 
   // Auto-load courses
   await loadNearestCourses();

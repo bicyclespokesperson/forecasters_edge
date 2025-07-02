@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Point } from "../src/weather-core.js";
-import { chooseDefaultStartTime } from "../src/weather-core.js";
+import { selectDefaultStartTime } from "../src/weather-core.js";
 
 describe("Point", () => {
   it("should correctly assign lat and lon values", () => {
@@ -252,54 +252,54 @@ describe("chooseDefaultStartTime", () => {
   it("should return '17' for a weekday (Monday)", () => {
     // Monday, October 30, 2023 10:00:00
     const weekdayDate = new Date(2023, 9, 30, 10, 0, 0); // Month is 0-indexed (9 for October)
-    expect(chooseDefaultStartTime(weekdayDate)).to.equal("17");
+    expect(selectDefaultStartTime(weekdayDate)).to.equal("17");
   });
 
   it("should return '17' for a weekday (Friday)", () => {
     // Friday, November 3, 2023 14:00:00
     const weekdayDate = new Date(2023, 10, 3, 14, 0, 0); // Month is 0-indexed (10 for November)
-    expect(chooseDefaultStartTime(weekdayDate)).to.equal("17");
+    expect(selectDefaultStartTime(weekdayDate)).to.equal("17");
   });
 
   it("should return the next hour for a weekend (Saturday, mid-day)", () => {
     // Saturday, October 28, 2023 10:00:00
     const weekendMidDay = new Date(2023, 9, 28, 10, 0, 0);
-    expect(chooseDefaultStartTime(weekendMidDay)).to.equal("11");
+    expect(selectDefaultStartTime(weekendMidDay)).to.equal("11");
   });
 
   it("should return '0' for a weekend (Sunday, 11 PM)", () => {
     // Sunday, October 29, 2023 23:00:00
     const weekendLateNight = new Date(2023, 9, 29, 23, 0, 0);
-    expect(chooseDefaultStartTime(weekendLateNight)).to.equal("0");
+    expect(selectDefaultStartTime(weekendLateNight)).to.equal("0");
   });
 
   it("should return '2' for a weekend (Saturday, 1 AM)", () => {
     // Saturday, October 28, 2023 01:00:00
     const weekendMorning = new Date(2023, 9, 28, 1, 0, 0);
-    expect(chooseDefaultStartTime(weekendMorning)).to.equal("2");
+    expect(selectDefaultStartTime(weekendMorning)).to.equal("2");
   });
 
   it("should return '17' for Friday 11 PM (still weekday behavior)", () => {
     // Friday, November 3, 2023 23:00:00
     const fridayLate = new Date(2023, 10, 3, 23, 0, 0);
-    expect(chooseDefaultStartTime(fridayLate)).to.equal("17");
+    expect(selectDefaultStartTime(fridayLate)).to.equal("17");
   });
 
   it("should return '0' for Sunday 11 PM (weekend behavior, next hour is midnight)", () => {
     // Sunday, November 5, 2023 23:00:00
     const sundayLate = new Date(2023, 10, 5, 23, 0, 0);
-    expect(chooseDefaultStartTime(sundayLate)).to.equal("0");
+    expect(selectDefaultStartTime(sundayLate)).to.equal("0");
   });
 
   it("should return '17' for Monday 12 AM (already Monday, so weekday behavior)", () => {
     // Monday, November 6, 2023 00:00:00
     const mondayEarly = new Date(2023, 10, 6, 0, 0, 0);
-    expect(chooseDefaultStartTime(mondayEarly)).to.equal("17");
+    expect(selectDefaultStartTime(mondayEarly)).to.equal("17");
   });
 
   it("should return '1' for Saturday 12 AM (already Saturday, so weekend behavior, next hour is 1 AM)", () => {
     // Saturday, November 4, 2023 00:00:00
     const saturdayEarly = new Date(2023, 10, 4, 0, 0, 0);
-    expect(chooseDefaultStartTime(saturdayEarly)).to.equal("1");
+    expect(selectDefaultStartTime(saturdayEarly)).to.equal("1");
   });
 });

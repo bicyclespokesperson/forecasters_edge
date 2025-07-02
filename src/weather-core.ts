@@ -221,7 +221,7 @@ export function toCourse(line: string): DiscGolfCourse {
   );
 }
 
-export function chooseDefaultStartTime(currentDate: Date): string {
+export function selectDefaultStartTime(currentDate: Date): string {
   const dayOfWeek = currentDate.getDay();
   const currentHour = currentDate.getHours();
 
