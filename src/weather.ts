@@ -823,8 +823,10 @@ async function pageInit(): Promise<void> {
     loadNearestCourses();
   });
 
-  // Auto-load courses
-  await loadNearestCourses();
+  const loadWeatherButton = document.getElementById("loadWeatherButton");
+  loadWeatherButton?.addEventListener("click", () => {
+    loadNearestCourses();
+  });
 }
 
 export { pageInit };
