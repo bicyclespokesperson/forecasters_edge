@@ -275,8 +275,8 @@ button:hover {
   background-color: #0056b3;
 }
 
-#showMoreButton {
-  margin-bottom: 10px;
+.course-control button {
+  margin-bottom: 0;
 }
 
 #courseCount {
