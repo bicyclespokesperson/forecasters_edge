@@ -279,10 +279,16 @@ describe("chooseDefaultStartTime", () => {
     expect(selectDefaultStartTime(weekendMorning)).to.equal("2");
   });
 
-  it("should return '17' for Friday 11 PM (still weekday behavior)", () => {
+  it("should return '17' for Friday 2 PM (before 4pm on weekdays)", () => {
+    // Friday, November 3, 2023 14:00:00
+    const fridayAfternoon = new Date(2023, 10, 3, 14, 0, 0);
+    expect(selectDefaultStartTime(fridayAfternoon)).to.equal("17");
+  });
+
+  it("should return '0' for Friday 11 PM (next hour after 4pm on weekdays)", () => {
     // Friday, November 3, 2023 23:00:00
     const fridayLate = new Date(2023, 10, 3, 23, 0, 0);
-    expect(selectDefaultStartTime(fridayLate)).to.equal("17");
+    expect(selectDefaultStartTime(fridayLate)).to.equal("0");
   });
 
   it("should return '0' for Sunday 11 PM (weekend behavior, next hour is midnight)", () => {

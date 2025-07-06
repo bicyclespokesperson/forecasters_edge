@@ -225,7 +225,7 @@ export function selectDefaultStartTime(currentDate: Date): string {
   const dayOfWeek = currentDate.getDay();
   const currentHour = currentDate.getHours();
 
-  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+  if (dayOfWeek >= 1 && dayOfWeek <= 5 && currentHour < 16) {
     return "17";
   } else {
     const nextHour = (currentHour + 1) % 24;
