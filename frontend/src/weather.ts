@@ -516,7 +516,7 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
             new Chart(canvas, {
               type: "radar",
               data: {
-                labels: ["☔", "🌡️", "💨", "🏞️", "⭐"],
+                labels: ["☔", "🌡️", "💨", "🏞️"],
                 datasets: [
                   {
                     data: [
@@ -524,7 +524,6 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                       breakdown.temperature.score || 0,
                       breakdown.wind.score || 0,
                       conditionsDisplay,
-                      breakdown.overall || 0,
                     ],
                     backgroundColor: chartColors.backgroundColor,
                     borderColor: chartColors.borderColor,
