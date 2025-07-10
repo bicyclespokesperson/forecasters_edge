@@ -162,7 +162,7 @@ export function calcWeatherScoreNew(
   precipProbability: number,
   tempF: number,
   windSpeedMph: number,
-  coefficients: [number, number, number, number] = [0.25, 0.25, 0.25, 0.25]
+  coefficients: [number, number, number, number] = [0.734011, 0.227356, 0.974824, 0.946542]
 ): number {
   const precipScore = scorePrecipitation(precipMm);
   const precipProbabilityScore =
