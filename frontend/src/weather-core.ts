@@ -223,9 +223,8 @@ export function calcWeatherScore(
   const temperatureScore = scoreTemperature(tempF);
   const windScore = scoreWind(windSpeedMph);
 
-  const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff, conditionsCoeff] = [
-    0.734011, 0.227356, 0.974824, 0.946542, 0.5,
-  ];
+  const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff, conditionsCoeff] =
+    [0.734011, 0.227356, 0.974824, 0.946542, 1.0];
 
   let conditionsPenalty = 0;
   if (conditions) {
