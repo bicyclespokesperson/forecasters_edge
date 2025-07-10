@@ -23,8 +23,7 @@ def send_request(request_type):
         "health": "http://localhost:3000/health",
         "rating-dimensions": f"{BASE_URL}/rating-dimensions",
         "course-data": f"{BASE_URL}/courses/613/data",
-        "submit-rating": f"{BASE_URL}/courses/613/ratings",
-        "submit-condition": f"{BASE_URL}/courses/613/conditions",
+        "submit-combined": f"{BASE_URL}/courses/613/submit",
         "bulk-course-data": f"{BASE_URL}/courses/bulk?ids=101,102,103",
     }
 
@@ -35,19 +34,14 @@ def send_request(request_type):
     url = endpoints[request_type]
 
     try:
-        if request_type in ["submit-rating", "submit-condition"]:
+        if request_type == "submit-combined":
             headers = {"Content-Type": "application/json"}
-            if request_type == "submit-rating":
-                data = {
-                    "user_id": "test_user_123",
-                    "ratings": {"difficulty": 4, "quality": 5},
-                }
-            else:  # submit-condition
-                data = {
-                    "user_id": "test_user_456",
-                    "rating": 3,
-                    "description": "muddy after rain",
-                }
+            data = {
+                "user_id": "test_user_789",
+                "ratings": {"difficulty": 3, "quality": 4},
+                "conditions_rating": 5,
+                "conditions_description": "excellent conditions today",
+            }
 
             response = requests.post(url, headers=headers, data=json.dumps(data))
         else:
@@ -79,8 +73,7 @@ if __name__ == "__main__":
             "health",
             "rating-dimensions",
             "course-data",
-            "submit-rating",
-            "submit-condition",
+            "submit-combined",
             "bulk-course-data",
         ],
         help="The type of request to send.",

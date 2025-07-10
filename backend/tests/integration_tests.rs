@@ -69,9 +69,10 @@ async fn setup_test_app() -> TestServer {
     let app_state = AppState {
         db: pool,
         time_config: TimeWeightConfig::default(),
+        verbose: false,
     };
 
-    let app = create_app(app_state);
+    let app = create_app(app_state, false);
     TestServer::new(app).unwrap()
 }
 
@@ -124,7 +125,7 @@ async fn test_submit_and_get_rating() {
     });
     
     let response = server
-        .post("/api/courses/123/ratings")
+        .post("/api/courses/123/submit")
         .json(&rating_submission)
         .await;
     
@@ -148,12 +149,12 @@ async fn test_submit_and_get_condition() {
     // Submit a condition report
     let condition_submission = json!({
         "user_id": "test_user_456",
-        "rating": 3,
-        "description": "muddy after rain"
+        "conditions_rating": 3,
+        "conditions_description": "muddy after rain"
     });
     
     let response = server
-        .post("/api/courses/456/conditions")
+        .post("/api/courses/456/submit")
         .json(&condition_submission)
         .await;
     
@@ -188,8 +189,8 @@ async fn test_bulk_course_data() {
         "ratings": { "quality": 4 }
     });
     
-    server.post("/api/courses/101/ratings").json(&rating1).await;
-    server.post("/api/courses/102/ratings").json(&rating2).await;
+    server.post("/api/courses/101/submit").json(&rating1).await;
+    server.post("/api/courses/102/submit").json(&rating2).await;
     
     // Get bulk data
     let response = server
@@ -221,8 +222,8 @@ async fn test_multiple_ratings_average() {
         "ratings": { "difficulty": 4 }
     });
     
-    server.post("/api/courses/200/ratings").json(&rating1).await;
-    server.post("/api/courses/200/ratings").json(&rating2).await;
+    server.post("/api/courses/200/submit").json(&rating1).await;
+    server.post("/api/courses/200/submit").json(&rating2).await;
     
     // Get the averaged result
     let response = server.get("/api/courses/200/data").await;
@@ -253,7 +254,7 @@ async fn test_malformed_rating_submission() {
     });
     
     let response = server
-        .post("/api/courses/123/ratings")
+        .post("/api/courses/123/submit")
         .json(&bad_rating)
         .await;
     

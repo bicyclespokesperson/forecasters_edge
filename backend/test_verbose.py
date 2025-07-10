@@ -33,39 +33,42 @@ def test_single_course_data():
     else:
         print(f"Response: {response.text}")
 
-def test_submit_rating():
-    print("\nTesting POST /api/courses/1/ratings endpoint...")
-    rating_data = {
+
+def test_submit_combined():
+    print("\nTesting POST /api/courses/1/submit endpoint (combined)...")
+    combined_data = {
         "user_id": "test_user",
         "ratings": {
             "quality": 4,
             "difficulty": 3
-        }
+        },
+        "conditions_rating": 5,
+        "conditions_description": "excellent conditions"
     }
     response = requests.post(
-        f"{BASE_URL}/api/courses/1/ratings", 
-        json=rating_data
+        f"{BASE_URL}/api/courses/1/submit", 
+        json=combined_data
     )
     print(f"Status: {response.status_code}")
     if response.status_code == 201:
-        print("Rating submitted (check server output for verbose logs)")
+        print("Combined submission successful (check server output for verbose logs)")
     else:
         print(f"Response: {response.text}")
 
-def test_submit_condition():
-    print("\nTesting POST /api/courses/1/conditions endpoint...")
-    condition_data = {
+def test_submit_combined_optional():
+    print("\nTesting POST /api/courses/2/submit endpoint (optional fields)...")
+    combined_data = {
         "user_id": "test_user",
-        "rating": 4,
-        "description": "great conditions"
+        "conditions_rating": 3,
+        "conditions_description": "muddy"
     }
     response = requests.post(
-        f"{BASE_URL}/api/courses/1/conditions", 
-        json=condition_data
+        f"{BASE_URL}/api/courses/2/submit", 
+        json=combined_data
     )
     print(f"Status: {response.status_code}")
     if response.status_code == 201:
-        print("Condition submitted (check server output for verbose logs)")
+        print("Combined submission with optional fields successful (check server output for verbose logs)")
     else:
         print(f"Response: {response.text}")
 
@@ -78,8 +81,8 @@ if __name__ == "__main__":
         test_health()
         test_bulk_course_data()
         test_single_course_data()
-        test_submit_rating()
-        test_submit_condition()
+        test_submit_combined()
+        test_submit_combined_optional()
         print("\n" + "=" * 50)
         print("Tests completed! Check the backend terminal for verbose output.")
     except requests.exceptions.ConnectionError:

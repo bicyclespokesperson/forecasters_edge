@@ -34,3 +34,11 @@ pub struct ConditionSubmission {
     pub rating: i32,
     pub description: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CombinedSubmission {
+    pub user_id: String,
+    pub ratings: Option<HashMap<String, i32>>, // dimension_name -> rating (1-5)
+    pub conditions_rating: Option<i32>,        // 1-5 scale (5 = best conditions)
+    pub conditions_description: Option<String>, // description of conditions
+}

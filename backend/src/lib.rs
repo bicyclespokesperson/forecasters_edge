@@ -34,8 +34,7 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
     let mut router = Router::new()
         .route("/api/courses/bulk", get(get_bulk_course_data))
         .route("/api/courses/:id/data", get(get_course_data))
-        .route("/api/courses/:id/ratings", post(submit_rating))
-        .route("/api/courses/:id/conditions", post(submit_condition))
+        .route("/api/courses/:id/submit", post(submit_combined))
         .route("/api/rating-dimensions", get(get_rating_dimensions))
         .route("/health", get(health_check))
         .layer(CorsLayer::permissive())
@@ -111,47 +110,49 @@ async fn get_bulk_course_data(
     Ok(Json(result))
 }
 
-async fn submit_rating(
-    Path(course_id): Path<i32>,
-    State(state): State<AppState>,
-    Json(rating): Json<RatingSubmission>,
-) -> Result<StatusCode, StatusCode> {
-    if state.verbose {
-        let json_str = serde_json::to_string_pretty(&rating).unwrap_or_else(|_| "Failed to serialize".to_string());
-        println!("📥 POST /api/courses/{}/ratings <- {}", course_id, json_str);
-    }
-    
-    insert_rating(&state.db, course_id, rating).await
-        .map_err(|e| {
-            eprintln!("Error inserting rating: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    
-    if state.verbose {
-        println!("📤 POST /api/courses/{}/ratings -> 201 CREATED", course_id);
-    }
-    
-    Ok(StatusCode::CREATED)
-}
 
-async fn submit_condition(
+
+async fn submit_combined(
     Path(course_id): Path<i32>,
     State(state): State<AppState>,
-    Json(condition): Json<ConditionSubmission>,
+    Json(submission): Json<CombinedSubmission>,
 ) -> Result<StatusCode, StatusCode> {
     if state.verbose {
-        let json_str = serde_json::to_string_pretty(&condition).unwrap_or_else(|_| "Failed to serialize".to_string());
-        println!("📥 POST /api/courses/{}/conditions <- {}", course_id, json_str);
+        let json_str = serde_json::to_string_pretty(&submission).unwrap_or_else(|_| "Failed to serialize".to_string());
+        println!("📥 POST /api/courses/{}/submit <- {}", course_id, json_str);
     }
     
-    insert_condition(&state.db, course_id, condition).await
-        .map_err(|e| {
-            eprintln!("Error inserting condition: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    // Submit ratings if provided
+    if let Some(ratings) = submission.ratings {
+        if !ratings.is_empty() {
+            let rating_submission = RatingSubmission {
+                user_id: submission.user_id.clone(),
+                ratings,
+            };
+            insert_rating(&state.db, course_id, rating_submission).await
+                .map_err(|e| {
+                    eprintln!("Error inserting ratings: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+        }
+    }
+    
+    // Submit conditions if provided
+    if let (Some(rating), Some(description)) = (submission.conditions_rating, submission.conditions_description) {
+        let condition_submission = ConditionSubmission {
+            user_id: submission.user_id.clone(),
+            rating,
+            description,
+        };
+        insert_condition(&state.db, course_id, condition_submission).await
+            .map_err(|e| {
+                eprintln!("Error inserting condition: {:?}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+    }
     
     if state.verbose {
-        println!("📤 POST /api/courses/{}/conditions -> 201 CREATED", course_id);
+        println!("📤 POST /api/courses/{}/submit -> 201 CREATED", course_id);
     }
     
     Ok(StatusCode::CREATED)
