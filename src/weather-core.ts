@@ -1,9 +1,6 @@
 import suncalc from "suncalc";
 
 const { getTimes } = suncalc;
-
-// Unused in core module, but kept for compatibility
-const mockWeatherRequests = false;
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
 
@@ -110,11 +107,13 @@ export class DiscGolfCourse {
 }
 
 function scorePrecipitation(precipMm: number): number {
-  return 10 - Math.max(7.5 - 2.7 * precipMm, 0) * (10 / 7.5);
+  const goodWeatherScore = Math.max(7.5 - 2.7 * precipMm, 0) * (10 / 7.5);
+  return Math.max(Math.min(goodWeatherScore, 10), 1);
 }
 
 function scorePrecipitationProbability(precipProbability: number): number {
-  return 10 - (((1 - precipProbability / 100) * 2.5) / 2.5) * 10;
+  const goodWeatherScore = (1 - precipProbability / 100) * 10;
+  return Math.max(Math.min(goodWeatherScore, 10), 1);
 }
 
 function scoreTemperature(tempF: number): number {
@@ -124,60 +123,61 @@ function scoreTemperature(tempF: number): number {
     (Math.max(minBestTemperatureF - tempF, 0) +
       Math.max(tempF - maxBestTemperatureF, 0)) /
     3;
-  return penalty;
+  return Math.max(Math.min(10 - penalty, 10), 1);
 }
 
 function scoreWind(windSpeedMph: number): number {
   const maxBestWindSpeedMPH = 25;
   const penalty = Math.max(windSpeedMph - maxBestWindSpeedMPH, 0) / 2;
-  return penalty;
+  return Math.max(Math.min(10 - penalty, 10), 1);
 }
 
-export function calcWeatherScoreOriginal(
-  precipMm: number,
-  precipProbability: number,
-  tempF: number,
-  windSpeedMph: number
-): number {
+function precipitationPenalty(precipMm: number): number {
+  return 10 - scorePrecipitation(precipMm);
+}
+
+function precipitationProbabilityPenalty(precipProbability: number): number {
+  return 10 - scorePrecipitationProbability(precipProbability);
+}
+
+function temperaturePenalty(tempF: number): number {
   const minBestTemperatureF = 45;
   const maxBestTemperatureF = 82;
-  const maxBestWindSpeedMPH = 25;
-
-  const precipScore = Math.max(7.5 - 2.7 * precipMm, 0);
-  const precipProbabilityScore = (1 - precipProbability / 100) * 2.5;
-  const tempPenalty =
+  return (
     (Math.max(minBestTemperatureF - tempF, 0) +
       Math.max(tempF - maxBestTemperatureF, 0)) /
-    3;
-  const windPenalty = Math.max(windSpeedMph - maxBestWindSpeedMPH, 0) / 2;
-
-  return Math.max(
-    precipScore + precipProbabilityScore - tempPenalty - windPenalty,
-    1
+    3
   );
 }
 
-export function calcWeatherScoreNew(
+function windPenalty(windSpeedMph: number): number {
+  const maxBestWindSpeedMPH = 25;
+  return Math.max(windSpeedMph - maxBestWindSpeedMPH, 0) / 2;
+}
+
+function calcWeatherScoreDimensional(
   precipMm: number,
   precipProbability: number,
   tempF: number,
   windSpeedMph: number,
-  coefficients: [number, number, number, number] = [0.734011, 0.227356, 0.974824, 0.946542]
+  coefficients: [number, number, number, number] = [
+    0.734011, 0.227356, 0.974824, 0.946542,
+  ]
 ): number {
-  const precipScore = scorePrecipitation(precipMm);
-  const precipProbabilityScore =
-    scorePrecipitationProbability(precipProbability);
-  const temperatureScore = scoreTemperature(tempF);
-  const windScore = scoreWind(windSpeedMph);
+  const precipPenaltyValue = precipitationPenalty(precipMm);
+  const precipProbPenaltyValue =
+    precipitationProbabilityPenalty(precipProbability);
+  const tempPenaltyValue = temperaturePenalty(tempF);
+  const windPenaltyValue = windPenalty(windSpeedMph);
 
   const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff] = coefficients;
 
   return Math.max(
     10 -
-      precipScore * precipCoeff -
-      precipProbabilityScore * precipProbCoeff -
-      temperatureScore * tempCoeff -
-      windScore * windCoeff,
+      precipPenaltyValue * precipCoeff -
+      precipProbPenaltyValue * precipProbCoeff -
+      tempPenaltyValue * tempCoeff -
+      windPenaltyValue * windCoeff,
     0
   );
 }
@@ -226,23 +226,18 @@ export function calcWeatherScore(
   const temperature = avgValue(weather.hourly.temperature_2m, false);
   const windSpeed = avgValue(weather.hourly.windspeed_10m, true) * kmToMile;
 
-  const score = calcWeatherScoreOriginal(
+  const score = calcWeatherScoreDimensional(
     precip,
     precipProbability,
     temperature,
     windSpeed
   );
 
-  const precipOriginal = Math.max(7.5 - 2.7 * precip, 0);
-  const precipProbabilityOriginal = (1 - precipProbability / 100) * 2.5;
-  const minBestTemperatureF = 45;
-  const maxBestTemperatureF = 82;
-  const maxBestWindSpeedMPH = 25;
-  const tempPenalty =
-    (Math.max(minBestTemperatureF - temperature, 0) +
-      Math.max(temperature - maxBestTemperatureF, 0)) /
-    3;
-  const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
+  const precipScore = scorePrecipitation(precip);
+  const precipProbabilityScore =
+    scorePrecipitationProbability(precipProbability);
+  const temperatureScore = scoreTemperature(temperature);
+  const windScore = scoreWind(windSpeed);
 
   const components = `precip (mm): ${precip.toFixed(
     1
@@ -252,29 +247,26 @@ export function calcWeatherScore(
     1
   )}, temperature (F): ${temperature.toFixed(1)}`;
 
-  const formula = `(${precipOriginal.toFixed(
+  const formula = `Dimensional scores: Precip ${precipScore.toFixed(
     1
-  )} precip score) + (${precipProbabilityOriginal.toFixed(
+  )}, PrecipProb ${precipProbabilityScore.toFixed(
     1
-  )} precip probability score) - (${tempPenalty.toFixed(
+  )}, Temp ${temperatureScore.toFixed(1)}, Wind ${windScore.toFixed(
     1
-  )} temperature penalty) - (${windPenalty.toFixed(
-    1
-  )} wind penalty) = ${score.toFixed(1)}`;
+  )} → Overall ${score.toFixed(1)}`;
 
-  //TODO: Eventually re-implement this
   const breakdown = {
-    Precipitation: 1,
-    Temperature: 1,
-    Wind: 1,
-    Overall: 1,
+    Precipitation: precipScore * 10,
+    Temperature: temperatureScore * 10,
+    Wind: windScore * 10,
+    Overall: score * 10,
   };
 
   const dimensionScores = {
-    precipitation: 1,
-    precipitationProbability: 1,
-    temperature: 1,
-    wind: 1,
+    precipitation: precipScore,
+    precipitationProbability: precipProbabilityScore,
+    temperature: temperatureScore,
+    wind: windScore,
   };
 
   return new WeatherScore(
