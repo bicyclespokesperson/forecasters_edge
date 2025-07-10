@@ -8,7 +8,7 @@
     "lint": "npx tsc --noEmit && eslint ./src/* --fix && prettier -w ./src/*",
     "start": "parcel ./index.html",
     "start:mock": "parcel ./index.html --open \"http://localhost:1234?mock\"",
-    "test": "NODE_ENV=test NODE_OPTIONS='--loader ts-node/esm' ./node_modules/.bin/mocha test/**/*.test.ts",
+    "test": "NODE_ENV=test NODE_OPTIONS='--import ./test-loader.mjs' ./node_modules/.bin/mocha test/**/*.test.ts",
     "prebuild-dev": "shx rm -rf dist/*",
     "build-dev": "parcel build ./index.html --no-optimize --public-url ./ && cp -r ./data ./dist/ && touch ./dist/.nojekyll",
     "prebuild": "shx rm -rf dist/*",
