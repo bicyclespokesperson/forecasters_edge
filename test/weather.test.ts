@@ -267,12 +267,15 @@ describe("calcWeatherScore functions comparison", () => {
   testCases.forEach(([precipMm, precipProbability, tempF, windSpeedMph, description]) => {
     it(`should produce similar scores for ${description}`, () => {
       const originalScore = calcWeatherScoreOriginal(precipMm, precipProbability, tempF, windSpeedMph);
-      const newScore = calcWeatherScoreNew(precipMm, precipProbability, tempF, windSpeedMph);
       
-      // This test is expected to fail initially - we'll iterate on calcWeatherScoreNew
+      // Experiment with different coefficient combinations to match original scores
+      const coefficients: [number, number, number, number] = [0.25, 0.25, 0.25, 0.25];
+      const newScore = calcWeatherScoreNew(precipMm, precipProbability, tempF, windSpeedMph, coefficients);
+      
+      // This test is expected to fail initially - we'll iterate on the coefficients
       // until the scores match within tolerance
       expect(newScore).to.be.closeTo(originalScore, 0.1, 
-        `Original: ${originalScore.toFixed(2)}, New: ${newScore.toFixed(2)} for ${description}`);
+        `Original: ${originalScore.toFixed(2)}, New: ${newScore.toFixed(2)} (coeffs: [${coefficients.join(', ')}]) for ${description}`);
     });
   });
 });
