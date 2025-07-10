@@ -75,7 +75,7 @@ async function fetchCourseData(courseId: number): Promise<CourseData | null> {
     courseDataCache.set(courseId, courseData);
     return courseData;
   } catch (error) {
-    console.warn(`Failed to fetch course data for ${courseId}:`, error);
+    console.error(`❌ Backend request failed - GET /api/courses/${courseId}/data:`, error);
     return null;
   }
 }
@@ -112,7 +112,7 @@ async function fetchBulkCourseData(courseIds: number[]): Promise<Map<number, Cou
     
     console.log(`✅ Fetched data for ${Object.keys(bulkData).length} courses from backend`);
   } catch (error) {
-    console.warn('Failed to fetch bulk course data:', error);
+    console.error('❌ Backend request failed - GET /api/courses/bulk:', error);
     console.log('ℹ️ Continuing without backend course data');
   }
 
@@ -128,7 +128,7 @@ async function fetchRatingDimensions(): Promise<void> {
       ratingDimensions = await response.json();
     }
   } catch (error) {
-    console.warn('Failed to fetch rating dimensions:', error);
+    console.error('❌ Backend request failed - GET /api/rating-dimensions:', error);
     ratingDimensions = [
       {id: 1, name: 'quality', description: 'Overall course quality', min_value: 1, max_value: 5},
       {id: 2, name: 'difficulty', description: 'Course difficulty', min_value: 1, max_value: 5}
@@ -264,10 +264,12 @@ async function submitCourseRating(courseId: number): Promise<void> {
       showRatingMessage(courseId, 'Failed to submit rating. Please try again.', 'error');
     }
   } catch (error) {
-    console.error('Error submitting rating:', error);
+    console.error(`❌ Backend request failed - POST /api/courses/${courseId}/submit:`, error);
     showRatingMessage(courseId, 'Failed to submit rating. Please try again.', 'error');
   } finally {
     if (submitButton) submitButton.disabled = false;
+    // Always hide the form regardless of success or failure
+    hideRatingForm(courseId);
   }
 }
 
@@ -466,7 +468,6 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
 
   courses.forEach((course) => {
     try {
-      console.log(`Creating marker for course: ${course.name}`);
       const marker = L.marker([course.location.lat, course.location.lon], {
         icon: createCustomIcon(course),
       });
