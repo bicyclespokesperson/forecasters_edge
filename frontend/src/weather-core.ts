@@ -226,11 +226,18 @@ export function calcWeatherScore(
   const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff, conditionsCoeff] =
     [0.734011, 0.227356, 0.974824, 0.946542, 1.0];
 
-  let conditionsPenalty = 0;
-  if (conditions) {
-    const conditionsScore = (5 - conditions.rating) * 2;
-    conditionsPenalty = conditionsScore * conditionsCoeff;
-  }
+  const conditionsPenalty = (() => {
+    if (!conditions || conditions.rating >= 4) {
+      return 0.0;
+    }
+    if (conditions.rating >= 3) {
+      return conditions.rating / 2;
+    }
+    if (conditions.rating >= 2) {
+      return conditions.rating * 1.5;
+    }
+    return 8 + conditions.rating;
+  })();
 
   const score = Math.max(
     10 -
