@@ -130,6 +130,38 @@ function scoreWind(windSpeedMph: number): number {
   return Math.max(10 - penalty, 1);
 }
 
+export function calcWeatherScoreOriginal(
+  precipMm: number,
+  precipProbability: number,
+  tempF: number,
+  windSpeedMph: number
+): number {
+  const minBestTemperatureF = 45;
+  const maxBestTemperatureF = 82;
+  const maxBestWindSpeedMPH = 25;
+  
+  const precipScore = Math.max(7.5 - 2.7 * precipMm, 0);
+  const precipProbabilityScore = (1 - precipProbability / 100) * 2.5;
+  const tempPenalty = (Math.max(minBestTemperatureF - tempF, 0) + Math.max(tempF - maxBestTemperatureF, 0)) / 3;
+  const windPenalty = Math.max(windSpeedMph - maxBestWindSpeedMPH, 0) / 2;
+  
+  return Math.max(precipScore + precipProbabilityScore - tempPenalty - windPenalty, 1);
+}
+
+export function calcWeatherScoreNew(
+  precipMm: number,
+  precipProbability: number,
+  tempF: number,
+  windSpeedMph: number
+): number {
+  const precipScore = scorePrecipitation(precipMm);
+  const precipProbabilityScore = scorePrecipitationProbability(precipProbability);
+  const temperatureScore = scoreTemperature(tempF);
+  const windScore = scoreWind(windSpeedMph);
+  
+  return precipScore + precipProbabilityScore + temperatureScore + windScore;
+}
+
 export function calcWeatherScore(
   weather: WeatherResponse,
   startHour: number
@@ -179,6 +211,8 @@ export function calcWeatherScore(
   const temperatureScore = scoreTemperature(temperature);
   const windScore = scoreWind(windSpeed);
 
+  const score = calcWeatherScoreOriginal(precip, precipProbability, temperature, windSpeed);
+
   const precipOriginal = Math.max(7.5 - 2.7 * precip, 0);
   const precipProbabilityOriginal = (1 - precipProbability / 100) * 2.5;
   const minBestTemperatureF = 45;
@@ -186,11 +220,6 @@ export function calcWeatherScore(
   const maxBestWindSpeedMPH = 25;
   const tempPenalty = (Math.max(minBestTemperatureF - temperature, 0) + Math.max(temperature - maxBestTemperatureF, 0)) / 3;
   const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
-
-  const score = Math.max(
-    precipOriginal + precipProbabilityOriginal - tempPenalty - windPenalty,
-    1
-  );
 
   const components = `precip (mm): ${precip.toFixed(
     1
