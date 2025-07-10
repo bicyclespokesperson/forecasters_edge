@@ -22,9 +22,9 @@ def send_request(request_type):
     endpoints = {
         "health": "http://localhost:3000/health",
         "rating-dimensions": f"{BASE_URL}/rating-dimensions",
-        "course-data": f"{BASE_URL}/courses/789/data",
-        "submit-rating": f"{BASE_URL}/courses/123/ratings",
-        "submit-condition": f"{BASE_URL}/courses/789/conditions",
+        "course-data": f"{BASE_URL}/courses/613/data",
+        "submit-rating": f"{BASE_URL}/courses/613/ratings",
+        "submit-condition": f"{BASE_URL}/courses/613/conditions",
         "bulk-course-data": f"{BASE_URL}/courses/bulk?ids=101,102,103",
     }
 

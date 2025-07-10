@@ -174,7 +174,9 @@ function createPopupContent(course: DiscGolfCourse): string {
 
   const conditions = course.getConditions();
   if (conditions) {
-    factors.push(`🏌️ Conditions: ${conditions.description} (${conditions.rating}/5)`);
+    factors.push(`🏞️ Conditions: ${conditions.description} (${conditions.rating}/5)`);
+  } else {
+    factors.push(`🏞️ Conditions: ❓`);
   }
 
   return `
@@ -306,7 +308,7 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
             new Chart(canvas, {
               type: "radar",
               data: {
-                labels: ["☔", "🌡️", "💨", "🏌️", "⭐"],
+                labels: ["☔", "🌡️", "💨", "🏞️", "⭐"],
                 datasets: [
                   {
                     data: [

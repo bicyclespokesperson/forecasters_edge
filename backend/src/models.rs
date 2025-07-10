@@ -22,13 +22,13 @@ pub struct RatingDimension {
     pub max_value: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RatingSubmission {
     pub user_id: String,
     pub ratings: HashMap<String, i32>, // dimension_name -> rating
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ConditionSubmission {
     pub user_id: String,
     pub rating: i32,
