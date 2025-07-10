@@ -92,7 +92,6 @@ function createCustomIcon(course: DiscGolfCourse): L.DivIcon {
 function createPopupContent(course: DiscGolfCourse): string {
   const score = course.getWeatherScore();
   const breakdown = score.breakdown;
-  console.log(`2 Weather breakdown for ${course.name}:`, breakdown);
 
   // Create detailed weather information with both actual values and percentages
   const factors = [
@@ -184,6 +183,7 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
 
   courses.forEach((course) => {
     try {
+      console.log(`Creating marker for course: ${course.name}`);
       const marker = L.marker([course.location.lat, course.location.lon], {
         icon: createCustomIcon(course),
       });
@@ -255,7 +255,7 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                 scales: {
                   r: {
                     suggestedMin: 0,
-                    suggestedMax: 100,
+                    suggestedMax: 10,
                     ticks: { display: false },
                     pointLabels: {
                       font: { size: 10 },
