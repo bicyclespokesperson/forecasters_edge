@@ -59,14 +59,18 @@ struct BulkQuery {
     ids: String,
 }
 
+fn parse_ids(ids_str: &str) -> Vec<i32> {
+    ids_str
+        .split(',')
+        .filter_map(|s| s.trim().parse().ok())
+        .collect()
+}
+
 async fn get_bulk_course_data(
     Query(query): Query<BulkQuery>,
     State(state): State<AppState>,
 ) -> Result<Json<HashMap<i32, UserCourseData>>, StatusCode> {
-    let course_ids: Vec<i32> = query.ids
-        .split(',')
-        .filter_map(|s| s.trim().parse().ok())
-        .collect();
+    let course_ids = parse_ids(&query.ids);
 
     let mut result = HashMap::new();
     
@@ -118,4 +122,19 @@ async fn get_rating_dimensions(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
     Ok(Json(dimensions))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_ids() {
+        assert_eq!(parse_ids("1,2,3"), vec![1, 2, 3]);
+        assert_eq!(parse_ids(" 1, 2 ,3 "), vec![1, 2, 3]);
+        assert_eq!(parse_ids("1,  ,3"), vec![1, 3]);
+        assert_eq!(parse_ids("1,2,a,3"), vec![1, 2, 3]);
+        assert_eq!(parse_ids(""), Vec::<i32>::new());
+        assert_eq!(parse_ids("  "), Vec::<i32>::new());
+    }
 }

@@ -2,6 +2,7 @@ use forecasters_edge_backend::{create_app, database::setup_database, time_weight
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenvy::dotenv().ok();
     let db = setup_database().await?;
     
     let app_state = AppState {

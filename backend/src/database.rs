@@ -1,6 +1,7 @@
-use sqlx::{SqlitePool, Row};
+use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
 use std::collections::HashMap;
 use anyhow::Result;
+use std::str::FromStr;
 
 use crate::models::*;
 use crate::time_weights::*;
@@ -8,15 +9,18 @@ use crate::time_weights::*;
 pub async fn setup_database() -> Result<SqlitePool> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "sqlite:./forecasters_edge.db".to_string());
-    
-    let pool = SqlitePool::connect(&database_url).await?;
-    
+
+    let connect_options = SqliteConnectOptions::from_str(&database_url)?
+        .create_if_missing(true);
+
+    let pool = SqlitePool::connect_with(connect_options).await?;
+
     // Run migrations
     sqlx::migrate!("./migrations").run(&pool).await?;
-    
+
     // Initialize default rating dimensions
     initialize_rating_dimensions(&pool).await?;
-    
+
     Ok(pool)
 }
 
@@ -25,7 +29,7 @@ async fn initialize_rating_dimensions(pool: &SqlitePool) -> Result<()> {
         ("difficulty", "Course difficulty level", 1, 5),
         ("quality", "Overall course quality", 1, 5),
     ];
-    
+
     for (name, description, min_val, max_val) in dimensions {
         sqlx::query(
             "INSERT OR IGNORE INTO rating_dimensions (name, description, min_value, max_value)
@@ -38,7 +42,7 @@ async fn initialize_rating_dimensions(pool: &SqlitePool) -> Result<()> {
         .execute(pool)
         .await?;
     }
-    
+
     Ok(())
 }
 
@@ -56,7 +60,7 @@ pub async fn get_course_ratings(
     .bind(course_id)
     .fetch_all(pool)
     .await?;
-    
+
     let mut ratings = HashMap::new();
     for row in rows {
         let name: String = row.get("name");
@@ -65,7 +69,7 @@ pub async fn get_course_ratings(
             ratings.insert(name, avg);
         }
     }
-    
+
     Ok(ratings)
 }
 
@@ -85,11 +89,11 @@ pub async fn get_course_conditions(
     .bind(time_config.max_reports as i64)
     .fetch_all(pool)
     .await?;
-    
+
     if rows.is_empty() {
         return Ok(None);
     }
-    
+
     let weighted_conditions: Vec<_> = rows
         .into_iter()
         .map(|row| {
@@ -97,7 +101,7 @@ pub async fn get_course_conditions(
             // In production, this would parse the actual timestamp
             let days_old = 0u32;
             let weight = calculate_weight(days_old, time_config);
-            
+
             WeightedCondition {
                 rating: row.get("rating"),
                 description: row.get("description"),
@@ -106,22 +110,22 @@ pub async fn get_course_conditions(
         })
         .filter(|wc| wc.weight > 0.0)
         .collect();
-    
+
     if weighted_conditions.is_empty() {
         return Ok(None);
     }
-    
+
     let total_weight: f32 = weighted_conditions.iter().map(|wc| wc.weight).sum();
     let weighted_rating: f32 = weighted_conditions
         .iter()
         .map(|wc| wc.rating as f32 * wc.weight)
         .sum();
-    
+
     let avg_rating = (weighted_rating / total_weight).round() as i32;
-    
+
     // Use the most recent description
     let description = weighted_conditions[0].description.clone();
-    
+
     Ok(Some(CourseCondition {
         rating: avg_rating,
         description,
@@ -141,7 +145,7 @@ pub async fn insert_rating(
         .fetch_one(pool)
         .await?
         .get("id");
-        
+
         sqlx::query(
             "INSERT INTO course_ratings (course_id, user_id, dimension_id, rating)
              VALUES (?, ?, ?, ?)"
@@ -153,7 +157,7 @@ pub async fn insert_rating(
         .execute(pool)
         .await?;
     }
-    
+
     Ok(())
 }
 
@@ -172,7 +176,7 @@ pub async fn insert_condition(
     .bind(&submission.description)
     .execute(pool)
     .await?;
-    
+
     Ok(())
 }
 
@@ -182,7 +186,7 @@ pub async fn get_all_rating_dimensions(pool: &SqlitePool) -> Result<Vec<RatingDi
     )
     .fetch_all(pool)
     .await?;
-    
+
     let dimensions = rows.into_iter().map(|row| RatingDimension {
         id: row.get("id"),
         name: row.get("name"),
@@ -190,7 +194,7 @@ pub async fn get_all_rating_dimensions(pool: &SqlitePool) -> Result<Vec<RatingDi
         min_value: row.get("min_value"),
         max_value: row.get("max_value"),
     }).collect();
-    
+
     Ok(dimensions)
 }
 
