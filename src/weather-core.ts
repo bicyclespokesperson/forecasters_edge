@@ -110,11 +110,11 @@ export class DiscGolfCourse {
 }
 
 function scorePrecipitation(precipMm: number): number {
-  return Math.max(7.5 - 2.7 * precipMm, 0) * (10 / 7.5);
+  return 10 - Math.max(7.5 - 2.7 * precipMm, 0) * (10 / 7.5);
 }
 
 function scorePrecipitationProbability(precipProbability: number): number {
-  return (((1 - precipProbability / 100) * 2.5) / 2.5) * 10;
+  return 10 - (((1 - precipProbability / 100) * 2.5) / 2.5) * 10;
 }
 
 function scoreTemperature(tempF: number): number {
@@ -124,13 +124,13 @@ function scoreTemperature(tempF: number): number {
     (Math.max(minBestTemperatureF - tempF, 0) +
       Math.max(tempF - maxBestTemperatureF, 0)) /
     3;
-  return Math.max(10 - penalty, 1);
+  return penalty;
 }
 
 function scoreWind(windSpeedMph: number): number {
   const maxBestWindSpeedMPH = 25;
   const penalty = Math.max(windSpeedMph - maxBestWindSpeedMPH, 0) / 2;
-  return Math.max(10 - penalty, 1);
+  return penalty;
 }
 
 export function calcWeatherScoreOriginal(
@@ -165,17 +165,20 @@ export function calcWeatherScoreNew(
   coefficients: [number, number, number, number] = [0.25, 0.25, 0.25, 0.25]
 ): number {
   const precipScore = scorePrecipitation(precipMm);
-  const precipProbabilityScore = scorePrecipitationProbability(precipProbability);
+  const precipProbabilityScore =
+    scorePrecipitationProbability(precipProbability);
   const temperatureScore = scoreTemperature(tempF);
   const windScore = scoreWind(windSpeedMph);
 
   const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff] = coefficients;
-  
-  return (
-    precipScore * precipCoeff +
-    precipProbabilityScore * precipProbCoeff +
-    temperatureScore * tempCoeff +
-    windScore * windCoeff
+
+  return Math.max(
+    10 -
+      precipScore * precipCoeff -
+      precipProbabilityScore * precipProbCoeff -
+      temperatureScore * tempCoeff -
+      windScore * windCoeff,
+    0
   );
 }
 
