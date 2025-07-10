@@ -5,13 +5,12 @@ use forecasters_edge_backend::{
 use serde_json::json;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
-use tempfile::NamedTempFile;
 
 async fn setup_test_app() -> TestServer {
-    let temp_file = NamedTempFile::new().unwrap();
-    let database_url = format!("sqlite:{}", temp_file.path().to_string_lossy());
+    // Use in-memory database for tests
+    let database_url = "sqlite::memory:";
     
-    let pool = SqlitePool::connect(&database_url).await.unwrap();
+    let pool = SqlitePool::connect(database_url).await.unwrap();
     
     // Run migrations manually since we're not using the setup_database function
     sqlx::query(
@@ -50,7 +49,7 @@ async fn setup_test_app() -> TestServer {
             user_id TEXT NOT NULL,
             rating INTEGER NOT NULL,
             description TEXT NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )"
     )
     .execute(&pool)
@@ -173,6 +172,7 @@ async fn test_submit_and_get_condition() {
     assert_eq!(conditions.description, "muddy after rain");
 }
 
+
 #[tokio::test]
 async fn test_bulk_course_data() {
     let server = setup_test_app().await;
@@ -192,7 +192,10 @@ async fn test_bulk_course_data() {
     server.post("/api/courses/102/ratings").json(&rating2).await;
     
     // Get bulk data
-    let response = server.get("/api/courses/data?ids=101,102,103").await;
+    let response = server
+        .get("/api/courses/bulk")
+        .add_query_param("ids", "101,102,103")
+        .await;
     
     response.assert_status_ok();
     let data: HashMap<i32, UserCourseData> = response.json();

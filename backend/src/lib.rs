@@ -26,8 +26,8 @@ pub struct AppState {
 
 pub fn create_app(state: AppState) -> Router {
     Router::new()
+        .route("/api/courses/bulk", get(get_bulk_course_data))
         .route("/api/courses/:id/data", get(get_course_data))
-        .route("/api/courses/data", get(get_bulk_course_data))
         .route("/api/courses/:id/ratings", post(submit_rating))
         .route("/api/courses/:id/conditions", post(submit_condition))
         .route("/api/rating-dimensions", get(get_rating_dimensions))
@@ -39,6 +39,7 @@ pub fn create_app(state: AppState) -> Router {
 async fn health_check() -> &'static str {
     "OK"
 }
+
 
 async fn get_course_data(
     Path(course_id): Path<i32>,
@@ -88,7 +89,10 @@ async fn submit_rating(
     Json(rating): Json<RatingSubmission>,
 ) -> Result<StatusCode, StatusCode> {
     insert_rating(&state.db, course_id, rating).await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            eprintln!("Error inserting rating: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     
     Ok(StatusCode::CREATED)
 }
@@ -99,7 +103,10 @@ async fn submit_condition(
     Json(condition): Json<ConditionSubmission>,
 ) -> Result<StatusCode, StatusCode> {
     insert_condition(&state.db, course_id, condition).await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            eprintln!("Error inserting condition: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     
     Ok(StatusCode::CREATED)
 }
