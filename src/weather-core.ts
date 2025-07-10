@@ -110,17 +110,20 @@ export class DiscGolfCourse {
 }
 
 function scorePrecipitation(precipMm: number): number {
-  return Math.max(7.5 - 2.7 * precipMm, 0) + 1;
+  return Math.max(7.5 - 2.7 * precipMm, 0) * (10 / 7.5);
 }
 
 function scorePrecipitationProbability(precipProbability: number): number {
-  return (1 - precipProbability / 100) * 2.5 + 7.5;
+  return (((1 - precipProbability / 100) * 2.5) / 2.5) * 10;
 }
 
 function scoreTemperature(tempF: number): number {
   const minBestTemperatureF = 45;
   const maxBestTemperatureF = 82;
-  const penalty = (Math.max(minBestTemperatureF - tempF, 0) + Math.max(tempF - maxBestTemperatureF, 0)) / 3;
+  const penalty =
+    (Math.max(minBestTemperatureF - tempF, 0) +
+      Math.max(tempF - maxBestTemperatureF, 0)) /
+    3;
   return Math.max(10 - penalty, 1);
 }
 
@@ -139,13 +142,19 @@ export function calcWeatherScoreOriginal(
   const minBestTemperatureF = 45;
   const maxBestTemperatureF = 82;
   const maxBestWindSpeedMPH = 25;
-  
+
   const precipScore = Math.max(7.5 - 2.7 * precipMm, 0);
   const precipProbabilityScore = (1 - precipProbability / 100) * 2.5;
-  const tempPenalty = (Math.max(minBestTemperatureF - tempF, 0) + Math.max(tempF - maxBestTemperatureF, 0)) / 3;
+  const tempPenalty =
+    (Math.max(minBestTemperatureF - tempF, 0) +
+      Math.max(tempF - maxBestTemperatureF, 0)) /
+    3;
   const windPenalty = Math.max(windSpeedMph - maxBestWindSpeedMPH, 0) / 2;
-  
-  return Math.max(precipScore + precipProbabilityScore - tempPenalty - windPenalty, 1);
+
+  return Math.max(
+    precipScore + precipProbabilityScore - tempPenalty - windPenalty,
+    1
+  );
 }
 
 export function calcWeatherScoreNew(
@@ -154,11 +163,12 @@ export function calcWeatherScoreNew(
   tempF: number,
   windSpeedMph: number
 ): number {
-  const precipScore = scorePrecipitation(precipMm);
-  const precipProbabilityScore = scorePrecipitationProbability(precipProbability);
+  const precipScore = (scorePrecipitation(precipMm) / 7.5) * 10;
+  const precipProbabilityScore =
+    (scorePrecipitationProbability(precipProbability) / 2.5) * 10;
   const temperatureScore = scoreTemperature(tempF);
   const windScore = scoreWind(windSpeedMph);
-  
+
   return precipScore + precipProbabilityScore + temperatureScore + windScore;
 }
 
@@ -206,19 +216,22 @@ export function calcWeatherScore(
   const temperature = avgValue(weather.hourly.temperature_2m, false);
   const windSpeed = avgValue(weather.hourly.windspeed_10m, true) * kmToMile;
 
-  const precipScore = scorePrecipitation(precip);
-  const precipProbabilityScore = scorePrecipitationProbability(precipProbability);
-  const temperatureScore = scoreTemperature(temperature);
-  const windScore = scoreWind(windSpeed);
-
-  const score = calcWeatherScoreOriginal(precip, precipProbability, temperature, windSpeed);
+  const score = calcWeatherScoreOriginal(
+    precip,
+    precipProbability,
+    temperature,
+    windSpeed
+  );
 
   const precipOriginal = Math.max(7.5 - 2.7 * precip, 0);
   const precipProbabilityOriginal = (1 - precipProbability / 100) * 2.5;
   const minBestTemperatureF = 45;
   const maxBestTemperatureF = 82;
   const maxBestWindSpeedMPH = 25;
-  const tempPenalty = (Math.max(minBestTemperatureF - temperature, 0) + Math.max(temperature - maxBestTemperatureF, 0)) / 3;
+  const tempPenalty =
+    (Math.max(minBestTemperatureF - temperature, 0) +
+      Math.max(temperature - maxBestTemperatureF, 0)) /
+    3;
   const windPenalty = Math.max(windSpeed - maxBestWindSpeedMPH, 0) / 2;
 
   const components = `precip (mm): ${precip.toFixed(
@@ -239,21 +252,27 @@ export function calcWeatherScore(
     1
   )} wind penalty) = ${score.toFixed(1)}`;
 
+  //TODO: Eventually re-implement this
   const breakdown = {
-    Precipitation: precipScore * 10,
-    Temperature: temperatureScore * 10,
-    Wind: windScore * 10,
-    Overall: score * 10,
+    Precipitation: 1,
+    Temperature: 1,
+    Wind: 1,
+    Overall: 1,
   };
 
   const dimensionScores = {
-    precipitation: precipScore,
-    precipitationProbability: precipProbabilityScore,
-    temperature: temperatureScore,
-    wind: windScore
+    precipitation: 1,
+    precipitationProbability: 1,
+    temperature: 1,
+    wind: 1,
   };
 
-  return new WeatherScore(score, components + "\n\n" + formula, breakdown, dimensionScores);
+  return new WeatherScore(
+    score,
+    components + "\n\n" + formula,
+    breakdown,
+    dimensionScores
+  );
 }
 
 export function distanceBetween(point1: Point, point2: Point): number {
