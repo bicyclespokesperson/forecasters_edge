@@ -4,3 +4,9 @@ dist/
 .cache
 .parcel-cache
 scripts/data/
+
+# Rust/Cargo
+target/
+Cargo.lock
+*.db
+*.sqlite

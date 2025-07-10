@@ -1,15 +1,45 @@
 ## Forecaster's Edge
 
-Ranks the weather at nearby disc golf courses. Powered by the [Open-Meteo](https://open-meteo.com/) Weather API.
+Ranks the weather at nearby disc golf courses with user ratings and course conditions. 
 
-### Building & Testing
+- **Frontend**: Interactive web app powered by the [Open-Meteo](https://open-meteo.com/) Weather API
+- **Backend**: Rust API for user-generated course ratings and conditions
 
-- Run `npm run build` to compile the typescript
-- Run `npm run lint` to run eslint and format the typescript
-- Run `npm run start` to launch an http server for testing. Visit the url printed on the screen to test
+### Project Structure
 
-### Deploying to GitHub pages
+```
+forecasters-edge/
+├── frontend/          # TypeScript web application
+│   ├── src/          # Source code
+│   ├── data/         # Course data and weather samples
+│   └── package.json  # Frontend dependencies
+├── backend/          # Rust API server
+│   ├── src/         # Rust source code
+│   └── Cargo.toml   # Rust dependencies
+└── README.md
+```
 
-- Run `npm run build`, then
-- Run `npm run push-gh-pages`
-  - [Instructions](https://gist.github.com/OleksiyRudenko/7e94aa2d18927e0c5e65b2b5a1c0e375)
+### Frontend Development
+
+```bash
+cd frontend/
+npm install
+npm run start      # Development server
+npm run test       # Run tests
+npm run build      # Production build
+npm run lint       # Code formatting
+```
+
+### Backend Development
+
+```bash
+cd backend/
+cargo run          # Start API server
+cargo test         # Run tests
+cargo clippy       # Linting
+```
+
+### Deployment
+
+- **Frontend**: GitHub Pages (`npm run push-gh-pages`)
+- **Backend**: Railway or similar Rust hosting platform
