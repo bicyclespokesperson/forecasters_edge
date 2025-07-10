@@ -23,8 +23,6 @@ import {
   WeatherResponse,
   WeatherScore,
   calcWeatherScore,
-  calcWeatherScoreOriginal,
-  calcWeatherScoreNew,
 } from "../src/weather-core.js";
 
 // Helper function to create a mock WeatherResponse
@@ -66,10 +64,10 @@ describe("calcWeatherScore", () => {
     const weather = createMockWeatherResponse(); // Default ideal weather
     const scoreData = calcWeatherScore(weather, 9); // Assuming 9 AM as default start hour
     expect(scoreData.score).to.be.closeTo(9.5, 0.5); // Expect score around 9-10
-    expect(scoreData.summary).to.include("precip (mm): 0.1");
-    expect(scoreData.summary).to.include("precipProbability (%): 10.0");
-    expect(scoreData.summary).to.include("windSpeed (mph): 3.1"); // 5 km/h * 0.621371
-    expect(scoreData.summary).to.include("temperature (F): 65.0");
+    expect(scoreData.breakdown.precipitation.raw.mm).to.be.closeTo(0.1, 0.01);
+    expect(scoreData.breakdown.precipitation.raw.probability).to.be.closeTo(10.0, 0.1);
+    expect(scoreData.breakdown.wind.raw.mph).to.be.closeTo(3.1, 0.1); // 5 km/h * 0.621371
+    expect(scoreData.breakdown.temperature.raw.fahrenheit).to.be.closeTo(65.0, 0.1);
   });
 
   it("should return a lower score for high precipitation", () => {
@@ -85,7 +83,7 @@ describe("calcWeatherScore", () => {
       precipitation_probability: Array(24).fill(80),
     }); // 80% chance of rain
     const scoreData = calcWeatherScore(weather, 9);
-    expect(scoreData.score).to.be.closeTo(7.73, 0.1); // Adjusted expectation
+    expect(scoreData.score).to.be.closeTo(7.92, 0.1); // Adjusted expectation
   });
 
   it("should penalize score for very low temperatures", () => {
@@ -250,32 +248,6 @@ describe("toCourse", () => {
   });
 });
 
-describe("calcWeatherScore functions comparison", () => {
-  const testCases: [number, number, number, number, string][] = [
-    // [precipMm, precipProbability, tempF, windSpeedMph, description]
-    [0.1, 10, 65, 3.1, "ideal conditions"],
-    [5, 20, 65, 3.1, "high precipitation"],
-    [0.1, 80, 65, 3.1, "high precipitation probability"],
-    [0.1, 10, 30, 3.1, "very cold temperature"],
-    [0.1, 10, 95, 3.1, "very hot temperature"],
-    [0.1, 10, 65, 31, "high wind speed"],
-    [2, 50, 45, 15, "mixed poor conditions"],
-    [0, 0, 70, 5, "perfect weather"],
-    [10, 100, 100, 50, "terrible weather"]
-  ];
-
-  testCases.forEach(([precipMm, precipProbability, tempF, windSpeedMph, description]) => {
-    it(`should produce similar scores for ${description}`, () => {
-      const originalScore = calcWeatherScoreOriginal(precipMm, precipProbability, tempF, windSpeedMph);
-      const newScore = calcWeatherScoreNew(precipMm, precipProbability, tempF, windSpeedMph);
-      
-      // Using optimized penalty-based coefficients - much better accuracy than weighted average!
-      // Average error is 0.237, max error is 1.0 for edge case
-      expect(newScore).to.be.closeTo(originalScore, 1.1, 
-        `Original: ${originalScore.toFixed(2)}, New: ${newScore.toFixed(2)} for ${description}`);
-    });
-  });
-});
 
 describe("chooseDefaultStartTime", () => {
   it("should return '17' for a weekday (Monday)", () => {

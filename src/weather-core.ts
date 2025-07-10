@@ -66,18 +66,27 @@ export class Point {
   }
 }
 
+export interface WeatherBreakdown {
+  precipitation: {
+    raw: { mm: number; probability: number };
+    penalty: number;
+    score: number;
+  };
+  temperature: {
+    raw: { fahrenheit: number };
+    penalty: number;
+    score: number;
+  };
+  wind: {
+    raw: { mph: number };
+    penalty: number;
+    score: number;
+  };
+  overall: number;
+}
+
 export class WeatherScore {
-  constructor(
-    public score: number,
-    public summary: string,
-    public breakdown: { [key: string]: number },
-    public dimensionScores: {
-      precipitation: number;
-      precipitationProbability: number;
-      temperature: number;
-      wind: number;
-    }
-  ) {}
+  constructor(public score: number, public breakdown: WeatherBreakdown) {}
 }
 
 export class DiscGolfCourse {
@@ -196,30 +205,27 @@ export function calcWeatherScore(
     0
   );
 
-  const components_str = `precip (mm): ${precipMm.toFixed(
-    1
-  )}, precipProbability (%): ${precipProbability.toFixed(
-    1
-  )}, windSpeed (mph): ${windSpeedMph.toFixed(
-    1
-  )}, temperature (F): ${tempF.toFixed(1)}`;
-
-  const breakdown = {
-    Precipitation: 10 - precipScore - precipProbabilityScore,
-    Temperature: 10 - temperatureScore,
-    Wind: 10 - windScore,
-    Overall: score,
+  const breakdown: WeatherBreakdown = {
+    precipitation: {
+      raw: { mm: precipMm, probability: precipProbability },
+      penalty:
+        precipScore * precipCoeff + precipProbabilityScore * precipProbCoeff,
+      score: 10 - precipScore - precipProbabilityScore,
+    },
+    temperature: {
+      raw: { fahrenheit: tempF },
+      penalty: temperatureScore * tempCoeff,
+      score: 10 - temperatureScore,
+    },
+    wind: {
+      raw: { mph: windSpeedMph },
+      penalty: windScore * windCoeff,
+      score: 10 - windScore,
+    },
+    overall: score,
   };
 
-  //TODO: Where is this used?
-  const dimensionScores = {
-    precipitation: 10 - precipScore,
-    precipitationProbability: 10 - precipScore,
-    temperature: 10 - temperatureScore,
-    wind: 10 - windScore,
-  };
-
-  return new WeatherScore(score, components_str, breakdown, dimensionScores);
+  return new WeatherScore(score, breakdown);
 }
 
 export function distanceBetween(point1: Point, point2: Point): number {

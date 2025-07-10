@@ -89,86 +89,22 @@ function createCustomIcon(course: DiscGolfCourse): L.DivIcon {
   });
 }
 
-function createRadarChart(course: DiscGolfCourse): HTMLCanvasElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = 150;
-  canvas.height = 150;
-
-  const breakdown = course.getWeatherScore().breakdown;
-
-  new Chart(canvas, {
-    type: "radar",
-    data: {
-      labels: Object.keys(breakdown),
-      datasets: [
-        {
-          label: "Weather Factors",
-          data: Object.values(breakdown),
-          backgroundColor: "rgba(0, 123, 255, 0.2)",
-          borderColor: "rgba(0, 123, 255, 1)",
-          pointBackgroundColor: "rgba(0, 123, 255, 1)",
-          pointBorderColor: "#fff",
-          pointHoverBackgroundColor: "#fff",
-          pointHoverBorderColor: "rgba(0, 123, 255, 1)",
-        },
-      ],
-    },
-    options: {
-      responsive: false,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
-      scales: {
-        r: {
-          angleLines: {
-            display: true,
-          },
-          suggestedMin: 0,
-          suggestedMax: 100,
-          ticks: {
-            display: false,
-          },
-          pointLabels: {
-            font: {
-              size: 10,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  return canvas;
-}
-
 function createPopupContent(course: DiscGolfCourse): string {
   const score = course.getWeatherScore();
   const breakdown = score.breakdown;
-
-  // Parse actual weather values from the summary
-  const summary = score.summary;
-  const precipMatch = summary.match(/precip \(mm\): ([\d.]+)/);
-  const precipProbMatch = summary.match(/precipProbability \(%\): ([\d.]+)/);
-  const windMatch = summary.match(/windSpeed \(mph\): ([\d.]+)/);
-  const tempMatch = summary.match(/temperature \(F\): ([\d.]+)/);
-
-  const precipMm = precipMatch ? parseFloat(precipMatch[1]) : 0;
-  const precipProb = precipProbMatch ? parseFloat(precipProbMatch[1]) : 0;
-  const windMph = windMatch ? parseFloat(windMatch[1]) : 0;
-  const tempF = tempMatch ? parseFloat(tempMatch[1]) : 0;
+  console.log(`2 Weather breakdown for ${course.name}:`, breakdown);
 
   // Create detailed weather information with both actual values and percentages
   const factors = [
-    `☔ Precipitation: ${precipProb.toFixed(0)}% chance, ${precipMm.toFixed(
-      1
-    )}mm`,
-    `🌡️ Temperature: ${tempF.toFixed(0)}°F (${breakdown.Temperature.toFixed(
+    `☔ Precipitation: ${breakdown.precipitation.raw.probability.toFixed(
       0
-    )}% comfort)`,
-    `💨 Wind: ${windMph.toFixed(0)} mph (${breakdown.Wind.toFixed(0)}% calm)`,
+    )}% chance, ${breakdown.precipitation.raw.mm.toFixed(1)}mm`,
+    `🌡️ Temperature: ${breakdown.temperature.raw.fahrenheit.toFixed(
+      0
+    )}°F (${breakdown.temperature.score.toFixed(0)}% comfort)`,
+    `💨 Wind: ${breakdown.wind.raw.mph.toFixed(
+      0
+    )} mph (${breakdown.wind.score.toFixed(0)}% calm)`,
   ];
 
   return `
@@ -271,6 +207,7 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
         if (canvas && !canvas.dataset.chartInitialized) {
           try {
             const breakdown = course.getWeatherScore().breakdown;
+            console.log(`Weather breakdown for ${course.name}:`, breakdown);
 
             // Detect dark mode for better chart visibility
             const isDarkMode =
@@ -299,10 +236,10 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                 datasets: [
                   {
                     data: [
-                      breakdown.Precipitation || 0,
-                      breakdown.Temperature || 0,
-                      breakdown.Wind || 0,
-                      breakdown.Overall || 0,
+                      breakdown.precipitation.score || 0,
+                      breakdown.temperature.score || 0,
+                      breakdown.wind.score || 0,
+                      breakdown.overall || 0,
                     ],
                     backgroundColor: chartColors.backgroundColor,
                     borderColor: chartColors.borderColor,
