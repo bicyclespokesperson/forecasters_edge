@@ -19,6 +19,7 @@ import {
   distanceBetween,
   toCourse,
   selectDefaultStartTime,
+  CourseData,
 } from "./weather-core.js";
 
 const { getTimes } = suncalc;
@@ -41,6 +42,7 @@ const mockWeatherRequests =
     new URLSearchParams(window.location.search).has("mock"));
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
+const BACKEND_URL = "http://localhost:3000";
 
 function pluralizeMiles(distance: number): string {
   const rounded = Math.round(distance);
@@ -48,7 +50,71 @@ function pluralizeMiles(distance: number): string {
 }
 
 const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
+const courseDataCache = new Map<number, CourseData>();
 const zipcodeLocations = new Map<string, Point>();
+
+async function fetchCourseData(courseId: number): Promise<CourseData | null> {
+  if (courseDataCache.has(courseId)) {
+    return courseDataCache.get(courseId)!;
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/courses/${courseId}/data`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`No data available for course ${courseId}`);
+        return null;
+      }
+      throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const courseData: CourseData = await response.json();
+    courseDataCache.set(courseId, courseData);
+    return courseData;
+  } catch (error) {
+    console.warn(`Failed to fetch course data for ${courseId}:`, error);
+    return null;
+  }
+}
+
+async function fetchBulkCourseData(courseIds: number[]): Promise<Map<number, CourseData>> {
+  const uncachedIds = courseIds.filter(id => !courseDataCache.has(id));
+  const result = new Map<number, CourseData>();
+  
+  courseIds.forEach(id => {
+    if (courseDataCache.has(id)) {
+      result.set(id, courseDataCache.get(id)!);
+    }
+  });
+
+  if (uncachedIds.length === 0) {
+    return result;
+  }
+
+  try {
+    const idsParam = uncachedIds.join(',');
+    const response = await fetch(`${BACKEND_URL}/api/courses/bulk?ids=${idsParam}`);
+    
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const bulkData: Record<number, CourseData> = await response.json();
+    
+    Object.entries(bulkData).forEach(([id, data]) => {
+      const courseId = parseInt(id);
+      courseDataCache.set(courseId, data);
+      result.set(courseId, data);
+    });
+    
+    console.log(`✅ Fetched data for ${Object.keys(bulkData).length} courses from backend`);
+  } catch (error) {
+    console.warn('Failed to fetch bulk course data:', error);
+    console.log('ℹ️ Continuing without backend course data');
+  }
+
+  return result;
+}
 let courses: Promise<DiscGolfCourse[]> | undefined;
 
 let map: L.Map;
@@ -105,6 +171,11 @@ function createPopupContent(course: DiscGolfCourse): string {
       0
     )} mph (${breakdown.wind.score.toFixed(0)}% calm)`,
   ];
+
+  const conditions = course.getConditions();
+  if (conditions) {
+    factors.push(`🏌️ Conditions: ${conditions.description} (${conditions.rating}/5)`);
+  }
 
   return `
     <div class="popup-content">
@@ -229,16 +300,20 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
                   gridColor: "rgba(0, 0, 0, 0.1)",
                 };
 
+            const conditionsScore = course.getConditions()?.rating || 5;
+            const conditionsDisplay = conditionsScore * 2;
+
             new Chart(canvas, {
               type: "radar",
               data: {
-                labels: ["☔", "🌡️", "💨", "⭐"],
+                labels: ["☔", "🌡️", "💨", "🏌️", "⭐"],
                 datasets: [
                   {
                     data: [
                       breakdown.precipitation.score || 0,
                       breakdown.temperature.score || 0,
                       breakdown.wind.score || 0,
+                      conditionsDisplay,
                       breakdown.overall || 0,
                     ],
                     backgroundColor: chartColors.backgroundColor,
@@ -592,14 +667,23 @@ async function loadNearestCourses(): Promise<void> {
     const courseList = document.getElementById("courseList");
     if (courseList) {
       courseList.innerHTML =
-        '<div class="loading">Loading weather data...</div>';
+        '<div class="loading">Loading weather and course data...</div>';
     }
+
+    const courseIds = courses.map(course => course.id);
+    const bulkCourseData = await fetchBulkCourseData(courseIds);
 
     await Promise.all(
       courses.map(async (course) => {
+        const courseData = bulkCourseData.get(course.id);
+        if (courseData) {
+          course.setCourseData(courseData);
+        }
+        
         await fetchWeather(course.location).then((weather) => {
           const startHour = getSelectedStartHour();
-          course.setWeatherScore(calcWeatherScore(weather, startHour));
+          const conditions = course.getConditions();
+          course.setWeatherScore(calcWeatherScore(weather, startHour, conditions));
         });
       })
     );

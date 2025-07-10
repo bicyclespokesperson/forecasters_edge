@@ -85,6 +85,14 @@ export interface WeatherBreakdown {
   overall: number;
 }
 
+export interface CourseData {
+  ratings: Record<string, number>;
+  conditions?: {
+    rating: number;
+    description: string;
+  };
+}
+
 export class WeatherScore {
   constructor(public score: number, public breakdown: WeatherBreakdown) {}
 }
@@ -93,6 +101,7 @@ export class DiscGolfCourse {
   private weatherScore: WeatherScore | undefined = undefined;
   public distanceAwayKm = NaN;
   public marker: any = undefined;
+  public courseData: CourseData | undefined = undefined;
 
   constructor(
     public id: number,
@@ -103,6 +112,26 @@ export class DiscGolfCourse {
 
   public setWeatherScore(weatherScore: WeatherScore): void {
     this.weatherScore = weatherScore;
+  }
+
+  public setCourseData(courseData: CourseData): void {
+    this.courseData = courseData;
+  }
+
+  public getCourseData(): CourseData | undefined {
+    return this.courseData;
+  }
+
+  public getQuality(): number | undefined {
+    return this.courseData?.ratings?.quality;
+  }
+
+  public getDifficulty(): number | undefined {
+    return this.courseData?.ratings?.difficulty;
+  }
+
+  public getConditions(): { rating: number; description: string } | undefined {
+    return this.courseData?.conditions;
   }
 
   public getWeatherScore(): WeatherScore {
@@ -145,7 +174,8 @@ function scoreWind(windSpeedMph: number): number {
 
 export function calcWeatherScore(
   weather: WeatherResponse,
-  startHour: number
+  startHour: number,
+  conditions?: { rating: number; description: string }
 ): WeatherScore {
   const weatherStartTime = new Date(weather.hourly.time[0]);
 
@@ -193,16 +223,23 @@ export function calcWeatherScore(
   const temperatureScore = scoreTemperature(tempF);
   const windScore = scoreWind(windSpeedMph);
 
-  const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff] = [
-    0.734011, 0.227356, 0.974824, 0.946542,
+  const [precipCoeff, precipProbCoeff, tempCoeff, windCoeff, conditionsCoeff] = [
+    0.734011, 0.227356, 0.974824, 0.946542, 0.5,
   ];
+
+  let conditionsPenalty = 0;
+  if (conditions) {
+    const conditionsScore = (5 - conditions.rating) * 2;
+    conditionsPenalty = conditionsScore * conditionsCoeff;
+  }
 
   const score = Math.max(
     10 -
       precipScore * precipCoeff -
       precipProbabilityScore * precipProbCoeff -
       temperatureScore * tempCoeff -
-      windScore * windCoeff,
+      windScore * windCoeff -
+      conditionsPenalty,
     0
   );
 
