@@ -117,7 +117,7 @@ async fn test_submit_and_get_condition() {
 
     let conditions = data.conditions.unwrap();
     assert_eq!(conditions.rating, 3);
-    assert_eq!(conditions.description, "muddy after rain");
+    assert_eq!(conditions.description, Some("muddy after rain".to_string()));
 }
 
 #[tokio::test]

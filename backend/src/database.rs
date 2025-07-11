@@ -111,8 +111,11 @@ pub async fn get_course_conditions(
 
     let avg_rating = (weighted_rating / total_weight).round() as i32;
 
-    // Use the most recent description
-    let description = weighted_conditions[0].description.clone();
+    // Use the most recent non-null description, or None if all are null
+    let description = weighted_conditions
+        .iter()
+        .find_map(|wc| wc.description.as_ref())
+        .cloned();
 
     Ok(Some(CourseCondition {
         rating: avg_rating,
@@ -188,7 +191,7 @@ pub async fn get_all_rating_dimensions(pool: &PgPool) -> Result<Vec<RatingDimens
 
 struct WeightedCondition {
     rating: i32,
-    description: String,
+    description: Option<String>,
     weight: f32,
 }
 

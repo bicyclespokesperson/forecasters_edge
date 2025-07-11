@@ -157,14 +157,11 @@ async fn submit_combined(
     }
 
     // Submit conditions if provided
-    if let (Some(rating), Some(description)) = (
-        submission.conditions_rating,
-        submission.conditions_description,
-    ) {
+    if let Some(rating) = submission.conditions_rating {
         let condition_submission = ConditionSubmission {
             user_id: submission.user_id.clone(),
             rating,
-            description,
+            description: submission.conditions_description,
         };
         insert_condition(&state.db, course_id, condition_submission)
             .await

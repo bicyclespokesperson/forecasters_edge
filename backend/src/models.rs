@@ -10,7 +10,7 @@ pub struct UserCourseData {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CourseCondition {
     pub rating: i32,
-    pub description: String,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,7 +32,7 @@ pub struct RatingSubmission {
 pub struct ConditionSubmission {
     pub user_id: String,
     pub rating: i32,
-    pub description: String,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -84,6 +84,6 @@ pub struct CourseConditionRow {
     pub id: i32,
     pub user_id: String,
     pub rating: i32,
-    pub description: String,
+    pub description: Option<String>,
     pub created_at: String,
 }
