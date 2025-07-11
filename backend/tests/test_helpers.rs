@@ -10,6 +10,13 @@ pub async fn setup_test_db() -> PgPool {
         setup_database_once();
     });
 
+    // Try to detect and use Shuttle's containerized PostgreSQL first
+    if let Some(shuttle_url) = detect_shuttle_database().await {
+        println!("✅ Using Shuttle containerized PostgreSQL for tests");
+        return PgPool::connect(&shuttle_url).await.expect("Failed to connect to Shuttle database");
+    }
+
+    // Fall back to local PostgreSQL setup
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgres://test_user:test_password@localhost:5432/forecasters_edge_test".to_string());
     
@@ -44,6 +51,29 @@ fn setup_database_once() {
     }
 
     println!("✅ Test database initialized");
+}
+
+async fn detect_shuttle_database() -> Option<String> {
+    // Check if there's a Shuttle PostgreSQL container running
+    let output = Command::new("docker")
+        .args(&["ps", "--filter", "name=shuttle_forecasters-edge-backend_shared_postgres", "--format", "{{.Ports}}"])
+        .output()
+        .ok()?;
+
+    let ports_output = String::from_utf8(output.stdout).ok()?;
+    if ports_output.trim().is_empty() {
+        return None;
+    }
+
+    // Extract port from output like "0.0.0.0:24898->5432/tcp"
+    if let Some(port_start) = ports_output.find("0.0.0.0:") {
+        if let Some(port_end) = ports_output[port_start + 8..].find("->") {
+            let port = &ports_output[port_start + 8..port_start + 8 + port_end];
+            return Some(format!("postgres://postgres:postgres@localhost:{}/forecasters-edge-backend", port));
+        }
+    }
+
+    None
 }
 
 pub async fn cleanup_test_tables(pool: &PgPool) {

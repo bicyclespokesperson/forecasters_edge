@@ -109,7 +109,13 @@ fn clean_db() {
 }
 
 fn run_tests(parallel: bool) {
-    setup_db();
+    // Check if Shuttle container is running first
+    if !detect_shuttle_container() {
+        println!("No Shuttle container detected, setting up local PostgreSQL...");
+        setup_db();
+    } else {
+        println!("✅ Shuttle container detected, tests will use containerized PostgreSQL");
+    }
     
     println!("🧪 Running tests...");
     
@@ -143,5 +149,19 @@ fn dev_server() {
     if !status.success() {
         eprintln!("❌ Server failed to start");
         exit(1);
+    }
+}
+
+fn detect_shuttle_container() -> bool {
+    let output = Command::new("docker")
+        .args(&["ps", "--filter", "name=shuttle_forecasters-edge-backend_shared_postgres", "--format", "{{.Names}}"])
+        .output();
+    
+    match output {
+        Ok(output) => {
+            let names = String::from_utf8_lossy(&output.stdout);
+            !names.trim().is_empty()
+        }
+        Err(_) => false
     }
 }

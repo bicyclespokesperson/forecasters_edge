@@ -10,6 +10,9 @@ Rust backend API for disc golf course ratings and conditions, built with Axum an
 # Install Docker and start it
 # Then run with Shuttle (uses containerized PostgreSQL)
 shuttle run
+
+# Run tests (automatically uses Shuttle's database if available)
+cargo run --bin xtask test
 ```
 
 ### Alternative Local Development
@@ -19,11 +22,11 @@ shuttle run
 brew install postgresql  # macOS
 brew services start postgresql
 
-# Setup database and run tests
-cargo run --bin xtask test
-
-# Start development server with verbose logging
+# Start development server with local PostgreSQL
 cargo run --bin xtask dev
+
+# Run tests (falls back to local PostgreSQL if no Shuttle container)
+cargo run --bin xtask test
 ```
 
 ### Production Deployment
@@ -107,7 +110,8 @@ curl -X POST http://localhost:3000/api/courses/123/submit \
 
 ### Automated Testing
 ```bash
-# All tests (recommended)
+# All tests (automatically detects database)
+# Uses Shuttle's containerized PostgreSQL if available, otherwise local PostgreSQL
 cargo run --bin xtask test
 
 # Unit tests only
