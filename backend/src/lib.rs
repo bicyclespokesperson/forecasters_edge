@@ -34,8 +34,8 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
 
     let mut router = Router::new()
         .route("/api/courses/bulk", get(get_bulk_course_data))
-        .route("/api/courses/:id/data", get(get_course_data))
-        .route("/api/courses/:id/submit", post(submit_combined))
+        .route("/api/courses/{id}/data", get(get_course_data))
+        .route("/api/courses/{id}/submit", post(submit_combined))
         .route("/api/rating-dimensions", get(get_rating_dimensions))
         .route("/health", get(health_check))
         .layer(CorsLayer::permissive())

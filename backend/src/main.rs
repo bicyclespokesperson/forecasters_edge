@@ -1,7 +1,6 @@
 use forecasters_edge_backend::{
     create_app, database::setup_database, time_weights::TimeWeightConfig, AppState,
 };
-use shuttle_axum::AxumService;
 use sqlx::PgPool;
 use std::env;
 
@@ -10,7 +9,7 @@ use std::env;
 //async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
-    #[shuttle_runtime::Secrets] secrets: shuttle_runtime::SecretStore,
+    #[shuttle_runtime::Secrets] _secrets: shuttle_runtime::SecretStore,
 ) -> shuttle_axum::ShuttleAxum {
     dotenvy::dotenv().ok();
 
@@ -26,5 +25,5 @@ async fn main(
 
     let app = create_app(app_state, verbose);
 
-    Ok(app.into())
+    Ok(shuttle_axum::AxumService(app))
 }

@@ -22,8 +22,9 @@ async fn initialize_rating_dimensions(pool: &PgPool) -> Result<()> {
 
     for (name, description, min_val, max_val) in dimensions {
         sqlx::query(
-            "INSERT OR IGNORE INTO rating_dimensions (name, description, min_value, max_value)
-             VALUES (?, ?, ?, ?)",
+            "INSERT INTO rating_dimensions (name, description, min_value, max_value)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (name) DO NOTHING",
         )
         .bind(name)
         .bind(description)
@@ -38,10 +39,10 @@ async fn initialize_rating_dimensions(pool: &PgPool) -> Result<()> {
 
 pub async fn get_course_ratings(pool: &PgPool, course_id: i32) -> Result<HashMap<String, f64>> {
     let rows = sqlx::query(
-        "SELECT rd.name, AVG(CAST(cr.rating AS REAL)) as avg_rating
+        "SELECT rd.name, AVG(CAST(cr.rating AS FLOAT)) as avg_rating
          FROM course_ratings cr
          JOIN rating_dimensions rd ON cr.dimension_id = rd.id
-         WHERE cr.course_id = ?
+         WHERE cr.course_id = $1
          GROUP BY rd.name",
     )
     .bind(course_id)
@@ -68,9 +69,9 @@ pub async fn get_course_conditions(
     let rows = sqlx::query(
         "SELECT rating, description, timestamp
          FROM course_conditions
-         WHERE course_id = ?
+         WHERE course_id = $1
          ORDER BY timestamp DESC
-         LIMIT ?",
+         LIMIT $2",
     )
     .bind(course_id)
     .bind(time_config.max_reports as i64)
@@ -125,7 +126,7 @@ pub async fn insert_rating(
     submission: RatingSubmission,
 ) -> Result<()> {
     for (dimension_name, rating) in submission.ratings {
-        let dimension_id: i32 = sqlx::query("SELECT id FROM rating_dimensions WHERE name = ?")
+        let dimension_id: i32 = sqlx::query("SELECT id FROM rating_dimensions WHERE name = $1")
             .bind(&dimension_name)
             .fetch_one(pool)
             .await?
@@ -133,7 +134,7 @@ pub async fn insert_rating(
 
         sqlx::query(
             "INSERT INTO course_ratings (course_id, user_id, dimension_id, rating)
-             VALUES (?, ?, ?, ?)",
+             VALUES ($1, $2, $3, $4)",
         )
         .bind(course_id)
         .bind(&submission.user_id)
@@ -153,7 +154,7 @@ pub async fn insert_condition(
 ) -> Result<()> {
     sqlx::query(
         "INSERT INTO course_conditions (course_id, user_id, rating, description)
-         VALUES (?, ?, ?, ?)",
+         VALUES ($1, $2, $3, $4)",
     )
     .bind(course_id)
     .bind(&submission.user_id)

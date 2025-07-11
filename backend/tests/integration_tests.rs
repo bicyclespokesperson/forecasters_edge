@@ -1,68 +1,17 @@
+mod test_helpers;
+
 use axum_test::TestServer;
 use forecasters_edge_backend::{create_app, models::*, time_weights::TimeWeightConfig, AppState};
 use serde_json::json;
-use sqlx::PgPool;
 use std::collections::HashMap;
+use test_helpers::{setup_test_db, cleanup_test_tables, setup_test_tables};
 
 async fn setup_test_app() -> TestServer {
-    // Use in-memory database for tests
-    let database_url = "sqlite::memory:";
-
-    let pool = PgPool::connect(database_url).await.unwrap();
-
-    // Run migrations manually since we're not using the setup_database function
-    sqlx::query(
-        "CREATE TABLE rating_dimensions (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT,
-            min_value INTEGER DEFAULT 1,
-            max_value INTEGER DEFAULT 5,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )",
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        "CREATE TABLE course_ratings (
-            id INTEGER PRIMARY KEY,
-            course_id INTEGER NOT NULL,
-            user_id TEXT NOT NULL,
-            dimension_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (dimension_id) REFERENCES rating_dimensions(id)
-        )",
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        "CREATE TABLE course_conditions (
-            id INTEGER PRIMARY KEY,
-            course_id INTEGER NOT NULL,
-            user_id TEXT NOT NULL,
-            rating INTEGER NOT NULL,
-            description TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )",
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Insert default rating dimensions
-    sqlx::query(
-        "INSERT INTO rating_dimensions (name, description, min_value, max_value)
-         VALUES ('difficulty', 'Course difficulty level', 1, 5),
-                ('quality', 'Overall course quality', 1, 5)",
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
+    let pool = setup_test_db().await;
+    
+    // Clean and setup tables for this test
+    cleanup_test_tables(&pool).await;
+    setup_test_tables(&pool).await;
 
     let app_state = AppState {
         db: pool,
