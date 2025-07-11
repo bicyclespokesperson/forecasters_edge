@@ -90,7 +90,7 @@ pub async fn get_course_conditions(
     time_config: &TimeWeightConfig,
 ) -> Result<Option<CourseCondition>> {
     let rows = sqlx::query(
-        "SELECT rating, description, timestamp
+        "SELECT rating, description, timestamp::text as timestamp_str
          FROM course_conditions
          WHERE course_id = $1
          ORDER BY timestamp DESC
@@ -105,31 +105,32 @@ pub async fn get_course_conditions(
         return Ok(None);
     }
 
-    let weighted_conditions: Vec<_> = rows
+    let weighted_conditions: Vec<(WeightedCondition, String)> = rows
         .into_iter()
         .map(|row| {
             // For tests, just assume recent timestamp (0 days old)
             // In production, this would parse the actual timestamp
             let days_old = 0u32;
             let weight = calculate_weight(days_old, time_config);
+            let timestamp: String = row.get("timestamp_str");
 
-            WeightedCondition {
+            (WeightedCondition {
                 rating: row.get("rating"),
                 description: row.get("description"),
                 weight,
-            }
+            }, timestamp)
         })
-        .filter(|wc| wc.weight > 0.0)
+        .filter(|(wc, _)| wc.weight > 0.0)
         .collect();
 
     if weighted_conditions.is_empty() {
         return Ok(None);
     }
 
-    let total_weight: f32 = weighted_conditions.iter().map(|wc| wc.weight).sum();
+    let total_weight: f32 = weighted_conditions.iter().map(|(wc, _)| wc.weight).sum();
     let weighted_rating: f32 = weighted_conditions
         .iter()
-        .map(|wc| wc.rating as f32 * wc.weight)
+        .map(|(wc, _)| wc.rating as f32 * wc.weight)
         .sum();
 
     let avg_rating = (weighted_rating / total_weight).round() as i32;
@@ -137,12 +138,16 @@ pub async fn get_course_conditions(
     // Use the most recent non-null description, or None if all are null
     let description = weighted_conditions
         .iter()
-        .find_map(|wc| wc.description.as_ref())
+        .find_map(|(wc, _)| wc.description.as_ref())
         .cloned();
+
+    // Use the timestamp from the most recent (first) entry
+    let most_recent_timestamp = weighted_conditions.first().map(|(_, ts)| ts.clone());
 
     Ok(Some(CourseCondition {
         rating: avg_rating,
         description,
+        timestamp: most_recent_timestamp,
     }))
 }
 

@@ -11,6 +11,7 @@ pub struct UserCourseData {
 pub struct CourseCondition {
     pub rating: i32,
     pub description: Option<String>,
+    pub timestamp: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
