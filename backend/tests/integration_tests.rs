@@ -207,3 +207,39 @@ async fn test_malformed_rating_submission() {
     response.assert_status(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
 }
 
+#[tokio::test]
+async fn test_admin_endpoints() {
+    let server = setup_test_app().await;
+
+    // Test database overview
+    let response = server.get("/api/admin/tables").await;
+    response.assert_status_ok();
+    
+    let tables: serde_json::Value = response.json();
+    assert!(tables["tables"].is_array());
+    
+    // Should have our three main tables
+    let table_names: Vec<&str> = tables["tables"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["table_name"].as_str().unwrap())
+        .collect();
+    
+    assert!(table_names.contains(&"rating_dimensions"));
+    assert!(table_names.contains(&"course_ratings"));
+    assert!(table_names.contains(&"course_conditions"));
+
+    // Test rating dimensions admin endpoint
+    let response = server.get("/api/admin/rating-dimensions?page=1&limit=10").await;
+    response.assert_status_ok();
+    
+    let paginated: serde_json::Value = response.json();
+    assert!(paginated["data"].is_array());
+    assert!(paginated["page"].as_u64() == Some(1));
+    assert!(paginated["limit"].as_u64() == Some(10));
+    assert!(paginated["total_count"].is_number());
+    assert!(paginated["total_pages"].is_number());
+}
+
+

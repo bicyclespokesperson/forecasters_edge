@@ -83,6 +83,12 @@ cargo run --bin xtask help
 - `GET /api/rating-dimensions` - Get available rating categories
 - `GET /health` - Health check
 
+### Database Admin (Development/Debugging)
+- `GET /api/admin/tables` - Database overview with row counts
+- `GET /api/admin/rating-dimensions?page=1&limit=50` - View rating dimensions (paginated)
+- `GET /api/admin/course-ratings?page=1&limit=50` - View all course ratings (paginated)
+- `GET /api/admin/course-conditions?page=1&limit=50` - View all course conditions (paginated)
+
 ### Example Request
 
 ```bash
@@ -133,6 +139,10 @@ cargo run --bin xtask dev
 ./send_request.py health
 ./send_request.py rating-dimensions
 ./send_request.py submit-combined
+
+# View database via admin endpoints
+curl http://localhost:8000/api/admin/tables
+curl http://localhost:8000/api/admin/course-ratings?page=1&limit=10
 ```
 
 ## Database
