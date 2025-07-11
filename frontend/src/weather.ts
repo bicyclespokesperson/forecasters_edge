@@ -616,7 +616,10 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
         maxWidth: 280,
         closeButton: true,
         autoPan: true,
-        autoPanPadding: [20, 20],
+        autoPanPadding: [10, 10],
+        keepInView: true,
+        maxHeight: 300,
+        className: 'custom-popup'
       });
 
       // Initialize chart and star ratings when popup opens

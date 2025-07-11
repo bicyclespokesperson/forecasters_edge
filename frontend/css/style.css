@@ -366,6 +366,7 @@ footer a {
     flex: none !important;
     min-height: auto !important;
     touch-action: manipulation;
+    overflow: visible !important;
   }
   
   .sidebar {
@@ -397,12 +398,32 @@ footer a {
   
   /* Mobile popup sizing */
   .leaflet-popup {
-    max-width: 180px !important;
+    max-width: 250px !important;
   }
   
   .popup-content {
     padding: 8px !important;
-    min-width: 140px !important;
+    min-width: 180px !important;
+  }
+  
+  .leaflet-popup-content-wrapper {
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+  }
+  
+  .custom-popup .leaflet-popup-content-wrapper {
+    position: relative !important;
+    z-index: 1000 !important;
+  }
+  
+  .leaflet-popup-tip-container {
+    overflow: visible !important;
+  }
+  
+  .leaflet-popup-content {
+    margin: 8px 8px !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
   }
   
   .chart-container {
