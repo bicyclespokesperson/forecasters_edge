@@ -44,7 +44,7 @@ const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
 const BACKEND_URL = window.location.hostname === 'localhost' 
   ? "http://localhost:3000" 
-  : "https://your-backend-domain.com";
+  : "https://forecastersedge-zzfd.shuttle.app";
 
 function pluralizeMiles(distance: number): string {
   const rounded = Math.round(distance);
