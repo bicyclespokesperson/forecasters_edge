@@ -26,6 +26,10 @@ def send_request(request_type):
         "course-data": f"{BASE_URL}/courses/613/data",
         "submit-combined": f"{BASE_URL}/courses/613/submit",
         "bulk-course-data": f"{BASE_URL}/courses/bulk?ids=101,102,103",
+        "admin-tables": f"{BASE_URL}/admin/tables",
+        "admin-rating-dimensions": f"{BASE_URL}/admin/rating-dimensions?page=1&limit=10",
+        "admin-course-ratings": f"{BASE_URL}/admin/course-ratings?page=1&limit=10",
+        "admin-course-conditions": f"{BASE_URL}/admin/course-conditions?page=1&limit=10",
     }
 
     if request_type not in endpoints:
@@ -76,6 +80,10 @@ if __name__ == "__main__":
             "course-data",
             "submit-combined",
             "bulk-course-data",
+            "admin-tables",
+            "admin-rating-dimensions",
+            "admin-course-ratings",
+            "admin-course-conditions",
         ],
         help="The type of request to send.",
     )
