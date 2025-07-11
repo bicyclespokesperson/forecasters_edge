@@ -199,7 +199,10 @@ async fn get_admin_tables(
 ) -> Result<Json<DatabaseOverview>, StatusCode> {
     let overview = get_database_overview(&state.db)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            eprintln!("Error in get_admin_tables: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     if state.verbose {
         let json_str = serde_json::to_string_pretty(&overview)
@@ -219,7 +222,10 @@ async fn get_admin_rating_dimensions(
 
     let response = get_all_rating_dimensions_paginated(&state.db, page, limit)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            eprintln!("Error in get_admin_rating_dimensions: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     if state.verbose {
         let json_str = serde_json::to_string_pretty(&response)

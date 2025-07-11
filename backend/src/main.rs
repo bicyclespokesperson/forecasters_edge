@@ -13,7 +13,7 @@ async fn main(
 ) -> shuttle_axum::ShuttleAxum {
     dotenvy::dotenv().ok();
 
-    let verbose = env::args().any(|arg| arg == "-v" || arg == "--verbose");
+    let verbose = env::var("VERBOSE").is_ok() || env::args().any(|arg| arg == "-v" || arg == "--verbose");
 
     let db = setup_database(pool).await?;
 

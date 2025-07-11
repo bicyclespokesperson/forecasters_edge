@@ -254,10 +254,10 @@ pub async fn get_all_course_ratings_paginated(
 
     let rows = sqlx::query(
         "SELECT cr.id, cr.user_id, cr.dimension_id, rd.name as dimension_name, 
-                cr.rating, cr.created_at::text as created_at
+                cr.rating, cr.timestamp::text as created_at
          FROM course_ratings cr
          JOIN rating_dimensions rd ON cr.dimension_id = rd.id
-         ORDER BY cr.created_at DESC
+         ORDER BY cr.timestamp DESC
          LIMIT $1 OFFSET $2"
     )
     .bind(limit as i64)
@@ -301,9 +301,9 @@ pub async fn get_all_course_conditions_paginated(
         .get("count");
 
     let rows = sqlx::query(
-        "SELECT id, user_id, rating, description, created_at::text as created_at
+        "SELECT id, user_id, rating, description, timestamp::text as created_at
          FROM course_conditions 
-         ORDER BY created_at DESC
+         ORDER BY timestamp DESC
          LIMIT $1 OFFSET $2"
     )
     .bind(limit as i64)
