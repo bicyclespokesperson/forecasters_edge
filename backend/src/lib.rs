@@ -37,6 +37,10 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
         .route("/api/courses/{id}/data", get(get_course_data))
         .route("/api/courses/{id}/submit", post(submit_combined))
         .route("/api/rating-dimensions", get(get_rating_dimensions))
+        .route("/api/admin/tables", get(get_admin_tables))
+        .route("/api/admin/rating-dimensions", get(get_admin_rating_dimensions))
+        .route("/api/admin/course-ratings", get(get_admin_course_ratings))
+        .route("/api/admin/course-conditions", get(get_admin_course_conditions))
         .route("/health", get(health_check))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
@@ -191,6 +195,82 @@ async fn get_rating_dimensions(
     }
 
     Ok(Json(dimensions))
+}
+
+async fn get_admin_tables(
+    State(state): State<AppState>,
+) -> Result<Json<DatabaseOverview>, StatusCode> {
+    let overview = get_database_overview(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if state.verbose {
+        let json_str = serde_json::to_string_pretty(&overview)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
+        println!("📤 GET /api/admin/tables -> {}", json_str);
+    }
+
+    Ok(Json(overview))
+}
+
+async fn get_admin_rating_dimensions(
+    Query(pagination): Query<PaginationParams>,
+    State(state): State<AppState>,
+) -> Result<Json<PaginatedResponse<RatingDimension>>, StatusCode> {
+    let page = pagination.page.unwrap_or(1).max(1);
+    let limit = pagination.limit.unwrap_or(50).clamp(1, 500);
+
+    let response = get_all_rating_dimensions_paginated(&state.db, page, limit)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if state.verbose {
+        let json_str = serde_json::to_string_pretty(&response)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
+        println!("📤 GET /api/admin/rating-dimensions?page={}&limit={} -> {}", page, limit, json_str);
+    }
+
+    Ok(Json(response))
+}
+
+async fn get_admin_course_ratings(
+    Query(pagination): Query<PaginationParams>,
+    State(state): State<AppState>,
+) -> Result<Json<PaginatedResponse<CourseRatingRow>>, StatusCode> {
+    let page = pagination.page.unwrap_or(1).max(1);
+    let limit = pagination.limit.unwrap_or(50).clamp(1, 500);
+
+    let response = get_all_course_ratings_paginated(&state.db, page, limit)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if state.verbose {
+        let json_str = serde_json::to_string_pretty(&response)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
+        println!("📤 GET /api/admin/course-ratings?page={}&limit={} -> {}", page, limit, json_str);
+    }
+
+    Ok(Json(response))
+}
+
+async fn get_admin_course_conditions(
+    Query(pagination): Query<PaginationParams>,
+    State(state): State<AppState>,
+) -> Result<Json<PaginatedResponse<CourseConditionRow>>, StatusCode> {
+    let page = pagination.page.unwrap_or(1).max(1);
+    let limit = pagination.limit.unwrap_or(50).clamp(1, 500);
+
+    let response = get_all_course_conditions_paginated(&state.db, page, limit)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if state.verbose {
+        let json_str = serde_json::to_string_pretty(&response)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
+        println!("📤 GET /api/admin/course-conditions?page={}&limit={} -> {}", page, limit, json_str);
+    }
+
+    Ok(Json(response))
 }
 
 #[cfg(test)]

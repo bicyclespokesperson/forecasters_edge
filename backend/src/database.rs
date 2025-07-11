@@ -191,3 +191,175 @@ struct WeightedCondition {
     description: String,
     weight: f32,
 }
+
+pub async fn get_all_rating_dimensions_paginated(
+    pool: &PgPool,
+    page: u32,
+    limit: u32,
+) -> Result<PaginatedResponse<RatingDimension>> {
+    let offset = (page - 1) * limit;
+    
+    let total_count: i64 = sqlx::query("SELECT COUNT(*) as count FROM rating_dimensions")
+        .fetch_one(pool)
+        .await?
+        .get("count");
+
+    let rows = sqlx::query(
+        "SELECT id, name, description, min_value, max_value 
+         FROM rating_dimensions 
+         ORDER BY id 
+         LIMIT $1 OFFSET $2"
+    )
+    .bind(limit as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
+
+    let dimensions = rows
+        .into_iter()
+        .map(|row| RatingDimension {
+            id: row.get("id"),
+            name: row.get("name"),
+            description: row.get("description"),
+            min_value: row.get("min_value"),
+            max_value: row.get("max_value"),
+        })
+        .collect();
+
+    let total_pages = ((total_count as f64) / (limit as f64)).ceil() as u32;
+
+    Ok(PaginatedResponse {
+        data: dimensions,
+        page,
+        limit,
+        total_count: total_count as u32,
+        total_pages,
+    })
+}
+
+pub async fn get_all_course_ratings_paginated(
+    pool: &PgPool,
+    page: u32,
+    limit: u32,
+) -> Result<PaginatedResponse<CourseRatingRow>> {
+    let offset = (page - 1) * limit;
+    
+    let total_count: i64 = sqlx::query("SELECT COUNT(*) as count FROM course_ratings")
+        .fetch_one(pool)
+        .await?
+        .get("count");
+
+    let rows = sqlx::query(
+        "SELECT cr.id, cr.user_id, cr.dimension_id, rd.name as dimension_name, 
+                cr.rating, cr.created_at::text as created_at
+         FROM course_ratings cr
+         JOIN rating_dimensions rd ON cr.dimension_id = rd.id
+         ORDER BY cr.created_at DESC
+         LIMIT $1 OFFSET $2"
+    )
+    .bind(limit as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
+
+    let ratings = rows
+        .into_iter()
+        .map(|row| CourseRatingRow {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            dimension_id: row.get("dimension_id"),
+            dimension_name: row.get("dimension_name"),
+            rating: row.get("rating"),
+            created_at: row.get("created_at"),
+        })
+        .collect();
+
+    let total_pages = ((total_count as f64) / (limit as f64)).ceil() as u32;
+
+    Ok(PaginatedResponse {
+        data: ratings,
+        page,
+        limit,
+        total_count: total_count as u32,
+        total_pages,
+    })
+}
+
+pub async fn get_all_course_conditions_paginated(
+    pool: &PgPool,
+    page: u32,
+    limit: u32,
+) -> Result<PaginatedResponse<CourseConditionRow>> {
+    let offset = (page - 1) * limit;
+    
+    let total_count: i64 = sqlx::query("SELECT COUNT(*) as count FROM course_conditions")
+        .fetch_one(pool)
+        .await?
+        .get("count");
+
+    let rows = sqlx::query(
+        "SELECT id, user_id, rating, description, created_at::text as created_at
+         FROM course_conditions 
+         ORDER BY created_at DESC
+         LIMIT $1 OFFSET $2"
+    )
+    .bind(limit as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
+
+    let conditions = rows
+        .into_iter()
+        .map(|row| CourseConditionRow {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            rating: row.get("rating"),
+            description: row.get("description"),
+            created_at: row.get("created_at"),
+        })
+        .collect();
+
+    let total_pages = ((total_count as f64) / (limit as f64)).ceil() as u32;
+
+    Ok(PaginatedResponse {
+        data: conditions,
+        page,
+        limit,
+        total_count: total_count as u32,
+        total_pages,
+    })
+}
+
+pub async fn get_database_overview(pool: &PgPool) -> Result<DatabaseOverview> {
+    let rating_dimensions_count: i64 = sqlx::query("SELECT COUNT(*) as count FROM rating_dimensions")
+        .fetch_one(pool)
+        .await?
+        .get("count");
+
+    let course_ratings_count: i64 = sqlx::query("SELECT COUNT(*) as count FROM course_ratings")
+        .fetch_one(pool)
+        .await?
+        .get("count");
+
+    let course_conditions_count: i64 = sqlx::query("SELECT COUNT(*) as count FROM course_conditions")
+        .fetch_one(pool)
+        .await?
+        .get("count");
+
+    let tables = vec![
+        TableStats {
+            table_name: "rating_dimensions".to_string(),
+            row_count: rating_dimensions_count as u32,
+        },
+        TableStats {
+            table_name: "course_ratings".to_string(),
+            row_count: course_ratings_count as u32,
+        },
+        TableStats {
+            table_name: "course_conditions".to_string(),
+            row_count: course_conditions_count as u32,
+        },
+    ];
+
+    Ok(DatabaseOverview { tables })
+}

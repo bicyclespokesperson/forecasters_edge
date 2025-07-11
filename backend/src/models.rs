@@ -42,3 +42,48 @@ pub struct CombinedSubmission {
     pub conditions_rating: Option<i32>,        // 1-5 scale (5 = best conditions)
     pub conditions_description: Option<String>, // description of conditions
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaginationParams {
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaginatedResponse<T> {
+    pub data: Vec<T>,
+    pub page: u32,
+    pub limit: u32,
+    pub total_count: u32,
+    pub total_pages: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TableStats {
+    pub table_name: String,
+    pub row_count: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DatabaseOverview {
+    pub tables: Vec<TableStats>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CourseRatingRow {
+    pub id: i32,
+    pub user_id: String,
+    pub dimension_id: i32,
+    pub dimension_name: String,
+    pub rating: i32,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CourseConditionRow {
+    pub id: i32,
+    pub user_id: String,
+    pub rating: i32,
+    pub description: String,
+    pub created_at: String,
+}
