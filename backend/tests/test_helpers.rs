@@ -120,7 +120,7 @@ pub async fn setup_test_tables(pool: &PgPool) {
             course_id INTEGER NOT NULL,
             user_id TEXT NOT NULL,
             rating INTEGER NOT NULL,
-            description TEXT NOT NULL,
+            description TEXT,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )",
     ).execute(pool).await.unwrap();
