@@ -468,8 +468,9 @@ function createPopupContent(course: DiscGolfCourse): string {
 
   const conditions = course.getConditions();
   if (conditions) {
+    const descriptionText = conditions.description || "No description provided";
     factors.push(
-      `🏞️ Conditions: ${conditions.description} (${conditions.rating}/5)`
+      `🏞️ Conditions: ${descriptionText} (${conditions.rating}/5)`
     );
   } else {
     factors.push(`🏞️ Conditions: ❓`);
