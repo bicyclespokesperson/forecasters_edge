@@ -42,9 +42,10 @@ const mockWeatherRequests =
     new URLSearchParams(window.location.search).has("mock"));
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
-const BACKEND_URL = window.location.hostname === 'localhost' 
-  ? "http://localhost:3000" 
-  : "https://forecastersedge-zzfd.shuttle.app";
+const BACKEND_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : "https://forecastersedge-zzfd.shuttle.app";
 
 function pluralizeMiles(distance: number): string {
   const rounded = Math.round(distance);
@@ -54,7 +55,13 @@ function pluralizeMiles(distance: number): string {
 const weatherPool: Array<[Point, Promise<WeatherResponse>]> = [];
 const courseDataCache = new Map<number, CourseData>();
 const zipcodeLocations = new Map<string, Point>();
-let ratingDimensions: Array<{id: number, name: string, description: string, min_value: number, max_value: number}> = [];
+let ratingDimensions: Array<{
+  id: number;
+  name: string;
+  description: string;
+  min_value: number;
+  max_value: number;
+}> = [];
 
 async function fetchCourseData(courseId: number): Promise<CourseData | null> {
   if (courseDataCache.has(courseId)) {
@@ -68,23 +75,30 @@ async function fetchCourseData(courseId: number): Promise<CourseData | null> {
         console.log(`No data available for course ${courseId}`);
         return null;
       }
-      throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Backend API error: ${response.status} ${response.statusText}`
+      );
     }
-    
+
     const courseData: CourseData = await response.json();
     courseDataCache.set(courseId, courseData);
     return courseData;
   } catch (error) {
-    console.error(`❌ Backend request failed - GET /api/courses/${courseId}/data:`, error);
+    console.error(
+      `❌ Backend request failed - GET /api/courses/${courseId}/data:`,
+      error
+    );
     return null;
   }
 }
 
-async function fetchBulkCourseData(courseIds: number[]): Promise<Map<number, CourseData>> {
-  const uncachedIds = courseIds.filter(id => !courseDataCache.has(id));
+async function fetchBulkCourseData(
+  courseIds: number[]
+): Promise<Map<number, CourseData>> {
+  const uncachedIds = courseIds.filter((id) => !courseDataCache.has(id));
   const result = new Map<number, CourseData>();
-  
-  courseIds.forEach(id => {
+
+  courseIds.forEach((id) => {
     if (courseDataCache.has(id)) {
       result.set(id, courseDataCache.get(id)!);
     }
@@ -95,25 +109,31 @@ async function fetchBulkCourseData(courseIds: number[]): Promise<Map<number, Cou
   }
 
   try {
-    const idsParam = uncachedIds.join(',');
-    const response = await fetch(`${BACKEND_URL}/api/courses/bulk?ids=${idsParam}`);
-    
+    const idsParam = uncachedIds.join(",");
+    const response = await fetch(
+      `${BACKEND_URL}/api/courses/bulk?ids=${idsParam}`
+    );
+
     if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Backend API error: ${response.status} ${response.statusText}`
+      );
     }
-    
+
     const bulkData: Record<number, CourseData> = await response.json();
-    
+
     Object.entries(bulkData).forEach(([id, data]) => {
       const courseId = parseInt(id);
       courseDataCache.set(courseId, data);
       result.set(courseId, data);
     });
-    
-    console.log(`✅ Fetched data for ${Object.keys(bulkData).length} courses from backend`);
+
+    console.log(
+      `✅ Fetched data for ${Object.keys(bulkData).length} courses from backend`
+    );
   } catch (error) {
-    console.error('❌ Backend request failed - GET /api/courses/bulk:', error);
-    console.log('ℹ️ Continuing without backend course data');
+    console.error("❌ Backend request failed - GET /api/courses/bulk:", error);
+    console.log("ℹ️ Continuing without backend course data");
   }
 
   return result;
@@ -121,17 +141,32 @@ async function fetchBulkCourseData(courseIds: number[]): Promise<Map<number, Cou
 
 async function fetchRatingDimensions(): Promise<void> {
   if (ratingDimensions.length > 0) return;
-  
+
   try {
     const response = await fetch(`${BACKEND_URL}/api/rating-dimensions`);
     if (response.ok) {
       ratingDimensions = await response.json();
     }
   } catch (error) {
-    console.error('❌ Backend request failed - GET /api/rating-dimensions:', error);
+    console.error(
+      "❌ Backend request failed - GET /api/rating-dimensions:",
+      error
+    );
     ratingDimensions = [
-      {id: 1, name: 'quality', description: 'Overall course quality', min_value: 1, max_value: 5},
-      {id: 2, name: 'difficulty', description: 'Course difficulty', min_value: 1, max_value: 5}
+      {
+        id: 1,
+        name: "quality",
+        description: "Overall course quality",
+        min_value: 1,
+        max_value: 5,
+      },
+      {
+        id: 2,
+        name: "difficulty",
+        description: "Course difficulty",
+        min_value: 1,
+        max_value: 5,
+      },
     ];
   }
 }
@@ -139,40 +174,54 @@ async function fetchRatingDimensions(): Promise<void> {
 function createStarRating(name: string, currentValue: number = 0): string {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    const activeClass = i <= currentValue ? 'active' : '';
-    stars.push(`<span class="star ${activeClass}" data-rating="${i}" data-name="${name}">★</span>`);
+    const activeClass = i <= currentValue ? "active" : "";
+    stars.push(
+      `<span class="star ${activeClass}" data-rating="${i}" data-name="${name}">★</span>`
+    );
   }
-  return `<div class="star-rating" data-name="${name}">${stars.join('')}</div>`;
+  return `<div class="star-rating" data-name="${name}">${stars.join("")}</div>`;
 }
 
 function createRatingForm(course: DiscGolfCourse): string {
   const currentConditions = course.getConditions();
-  const currentDescription = currentConditions?.description || '';
+  const currentDescription = currentConditions?.description || "";
   const currentConditionsRating = currentConditions?.rating || 0;
-  
-  const dimensionRows = ratingDimensions.map(dim => `
+
+  const dimensionRows = ratingDimensions
+    .map(
+      (dim) => `
     <div class="rating-row">
       <span class="rating-label">${dim.name}:</span>
       ${createStarRating(dim.name, 0)}
     </div>
-  `).join('');
-  
+  `
+    )
+    .join("");
+
   return `
-    <div class="rating-form" id="rating-form-${course.id}" style="display: none;">
+    <div class="rating-form" id="rating-form-${
+      course.id
+    }" style="display: none;">
       <h4>Rate This Course</h4>
       ${dimensionRows}
       <div class="rating-row">
         <span class="rating-label">🏞️ Conditions:</span>
-        ${createStarRating('conditions', 0)}
+        ${createStarRating("conditions", 0)}
       </div>
       <input type="text" class="conditions-input" placeholder="Describe current conditions (optional)" 
              value="${currentDescription}" maxlength="100">
       <input type="text" class="user-id-input" placeholder="Your name/username (optional)" maxlength="50">
       <div class="rating-form-buttons">
-        <button class="rate-button primary" onclick="submitCourseRating(${course.id})">Submit Rating</button>
-        <button class="rate-button secondary" onclick="hideRatingForm(${course.id})">Cancel</button>
+        <button class="rate-button primary" onclick="submitCourseRating(${
+          course.id
+        })">Submit Rating</button>
+        <button class="rate-button secondary" onclick="hideRatingForm(${
+          course.id
+        })">Cancel</button>
       </div>
-      <div class="rating-message" id="rating-message-${course.id}" style="display: none;"></div>
+      <div class="rating-message" id="rating-message-${
+        course.id
+      }" style="display: none;"></div>
     </div>
   `;
 }
@@ -181,8 +230,8 @@ function showRatingForm(courseId: number): void {
   const form = document.getElementById(`rating-form-${courseId}`);
   const button = document.getElementById(`rate-course-btn-${courseId}`);
   if (form && button) {
-    form.style.display = 'block';
-    button.style.display = 'none';
+    form.style.display = "block";
+    button.style.display = "none";
   }
 }
 
@@ -190,8 +239,8 @@ function hideRatingForm(courseId: number): void {
   const form = document.getElementById(`rating-form-${courseId}`);
   const button = document.getElementById(`rate-course-btn-${courseId}`);
   if (form && button) {
-    form.style.display = 'none';
-    button.style.display = 'block';
+    form.style.display = "none";
+    button.style.display = "block";
   }
 }
 
@@ -199,75 +248,104 @@ async function submitCourseRating(courseId: number): Promise<void> {
   const form = document.getElementById(`rating-form-${courseId}`);
   const messageDiv = document.getElementById(`rating-message-${courseId}`);
   if (!form || !messageDiv) return;
-  
-  const submitButton = form.querySelector('.rate-button.primary') as HTMLButtonElement;
+
+  const submitButton = form.querySelector(
+    ".rate-button.primary"
+  ) as HTMLButtonElement;
   if (submitButton) submitButton.disabled = true;
-  
+
   try {
     const ratings: Record<string, number> = {};
     let hasRatings = false;
-    
-    ratingDimensions.forEach(dim => {
-      const starRating = form.querySelector(`.star-rating[data-name="${dim.name}"]`);
-      const activeStars = starRating?.querySelectorAll('.star.active');
+
+    ratingDimensions.forEach((dim) => {
+      const starRating = form.querySelector(
+        `.star-rating[data-name="${dim.name}"]`
+      );
+      const activeStars = starRating?.querySelectorAll(".star.active");
       if (activeStars && activeStars.length > 0) {
         ratings[dim.name] = activeStars.length;
         hasRatings = true;
       }
     });
-    
-    const conditionsStarRating = form.querySelector('.star-rating[data-name="conditions"]');
-    const conditionsActiveStars = conditionsStarRating?.querySelectorAll('.star.active');
+
+    const conditionsStarRating = form.querySelector(
+      '.star-rating[data-name="conditions"]'
+    );
+    const conditionsActiveStars =
+      conditionsStarRating?.querySelectorAll(".star.active");
     const conditionsRating = conditionsActiveStars?.length || 0;
-    
-    const conditionsInput = form.querySelector('.conditions-input') as HTMLInputElement;
-    const conditionsDescription = conditionsInput?.value.trim() || '';
-    
-    const userIdInput = form.querySelector('.user-id-input') as HTMLInputElement;
-    const userId = userIdInput?.value.trim() || 'anonymous';
-    
+
+    const conditionsInput = form.querySelector(
+      ".conditions-input"
+    ) as HTMLInputElement;
+    const conditionsDescription = conditionsInput?.value.trim() || "";
+
+    const userIdInput = form.querySelector(
+      ".user-id-input"
+    ) as HTMLInputElement;
+    const userId = userIdInput?.value.trim() || "anonymous";
+
     const submission: any = { user_id: userId };
-    
+
     if (hasRatings) {
       submission.ratings = ratings;
     }
-    
+
     if (conditionsRating > 0) {
       submission.conditions_rating = conditionsRating;
       if (conditionsDescription) {
         submission.conditions_description = conditionsDescription;
       }
     }
-    
+
     if (!submission.ratings && !submission.conditions_rating) {
-      showRatingMessage(courseId, 'Please provide at least one rating or condition update.', 'error');
+      showRatingMessage(
+        courseId,
+        "Please provide at least one rating or condition update.",
+        "error"
+      );
       return;
     }
-    
-    const response = await fetch(`${BACKEND_URL}/api/courses/${courseId}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(submission)
-    });
-    
+
+    const response = await fetch(
+      `${BACKEND_URL}/api/courses/${courseId}/submit`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submission),
+      }
+    );
+
     if (response.ok) {
-      showRatingMessage(courseId, 'Thank you for your rating!', 'success');
+      showRatingMessage(courseId, "Thank you for your rating!", "success");
       setTimeout(() => hideRatingForm(courseId), 2000);
-      
+
       await fetchBulkCourseData([courseId]);
       const updatedData = courseDataCache.get(courseId);
       if (updatedData) {
-        const course = displayedCourses.find(c => c.id === courseId);
+        const course = displayedCourses.find((c) => c.id === courseId);
         if (course) {
           course.setCourseData(updatedData);
         }
       }
     } else {
-      showRatingMessage(courseId, 'Failed to submit rating. Please try again.', 'error');
+      showRatingMessage(
+        courseId,
+        "Failed to submit rating. Please try again.",
+        "error"
+      );
     }
   } catch (error) {
-    console.error(`❌ Backend request failed - POST /api/courses/${courseId}/submit:`, error);
-    showRatingMessage(courseId, 'Failed to submit rating. Please try again.', 'error');
+    console.error(
+      `❌ Backend request failed - POST /api/courses/${courseId}/submit:`,
+      error
+    );
+    showRatingMessage(
+      courseId,
+      "Failed to submit rating. Please try again.",
+      "error"
+    );
   } finally {
     if (submitButton) submitButton.disabled = false;
     // Always hide the form regardless of success or failure
@@ -275,14 +353,18 @@ async function submitCourseRating(courseId: number): Promise<void> {
   }
 }
 
-function showRatingMessage(courseId: number, message: string, type: 'success' | 'error'): void {
+function showRatingMessage(
+  courseId: number,
+  message: string,
+  type: "success" | "error"
+): void {
   const messageDiv = document.getElementById(`rating-message-${courseId}`);
   if (messageDiv) {
     messageDiv.textContent = message;
     messageDiv.className = `rating-message ${type}`;
-    messageDiv.style.display = 'block';
+    messageDiv.style.display = "block";
     setTimeout(() => {
-      messageDiv.style.display = 'none';
+      messageDiv.style.display = "none";
     }, 5000);
   }
 }
@@ -290,37 +372,38 @@ function showRatingMessage(courseId: number, message: string, type: 'success' | 
 function initializeStarRatings(courseId: number): void {
   const form = document.getElementById(`rating-form-${courseId}`);
   if (!form) return;
-  
-  const starRatings = form.querySelectorAll('.star-rating');
-  starRatings.forEach(rating => {
-    const stars = rating.querySelectorAll('.star');
+
+  const starRatings = form.querySelectorAll(".star-rating");
+  starRatings.forEach((rating) => {
+    const stars = rating.querySelectorAll(".star");
     stars.forEach((star, index) => {
-      star.addEventListener('click', () => {
-        const ratingName = rating.getAttribute('data-name');
+      star.addEventListener("click", () => {
+        const ratingName = rating.getAttribute("data-name");
         if (!ratingName) return;
-        
+
         // Clear all active states
-        stars.forEach(s => s.classList.remove('active'));
-        
+        stars.forEach((s) => s.classList.remove("active"));
+
         // Set active states up to clicked star
         for (let i = 0; i <= index; i++) {
-          stars[i].classList.add('active');
+          stars[i].classList.add("active");
         }
       });
-      
-      star.addEventListener('mouseenter', () => {
+
+      star.addEventListener("mouseenter", () => {
         // Show hover effect
         stars.forEach((s, i) => {
-          (s as HTMLElement).style.color = i <= index ? '#ffd700' : '#ddd';
+          (s as HTMLElement).style.color = i <= index ? "#ffd700" : "#ddd";
         });
       });
     });
-    
-    rating.addEventListener('mouseleave', () => {
+
+    rating.addEventListener("mouseleave", () => {
       // Reset to actual rating state
-      const activeStars = rating.querySelectorAll('.star.active');
+      const activeStars = rating.querySelectorAll(".star.active");
       stars.forEach((s, i) => {
-        (s as HTMLElement).style.color = i < activeStars.length ? '#ffd700' : '#ddd';
+        (s as HTMLElement).style.color =
+          i < activeStars.length ? "#ffd700" : "#ddd";
       });
     });
   });
@@ -375,17 +458,19 @@ function createPopupContent(course: DiscGolfCourse): string {
     `☔ Precipitation: ${breakdown.precipitation.raw.probability.toFixed(
       0
     )}% chance, ${breakdown.precipitation.raw.mm.toFixed(1)}mm`,
-    `🌡️ Temperature: ${breakdown.temperature.raw.fahrenheit.toFixed(
-      0
-    )}°F (${breakdown.temperature.score.toFixed(0)}% comfort)`,
-    `💨 Wind: ${breakdown.wind.raw.mph.toFixed(
-      0
-    )} mph (${breakdown.wind.score.toFixed(0)}% calm)`,
+    `🌡️ Temperature: ${breakdown.temperature.raw.fahrenheit.toFixed(0)}°F (${(
+      10 * breakdown.temperature.score
+    ).toFixed(0)}% comfort)`,
+    `💨 Wind: ${breakdown.wind.raw.mph.toFixed(0)} mph (${(
+      10 * breakdown.wind.score
+    ).toFixed(0)}% calm)`,
   ];
 
   const conditions = course.getConditions();
   if (conditions) {
-    factors.push(`🏞️ Conditions: ${conditions.description} (${conditions.rating}/5)`);
+    factors.push(
+      `🏞️ Conditions: ${conditions.description} (${conditions.rating}/5)`
+    );
   } else {
     factors.push(`🏞️ Conditions: ❓`);
   }
@@ -567,7 +652,7 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
             console.warn(`Failed to create chart for ${course.name}:`, error);
           }
         }
-        
+
         // Initialize star rating interactions
         initializeStarRatings(course.id);
       });
@@ -887,7 +972,7 @@ async function loadNearestCourses(): Promise<void> {
         '<div class="loading">Loading weather and course data...</div>';
     }
 
-    const courseIds = courses.map(course => course.id);
+    const courseIds = courses.map((course) => course.id);
     const bulkCourseData = await fetchBulkCourseData(courseIds);
 
     await Promise.all(
@@ -896,11 +981,13 @@ async function loadNearestCourses(): Promise<void> {
         if (courseData) {
           course.setCourseData(courseData);
         }
-        
+
         await fetchWeather(course.location).then((weather) => {
           const startHour = getSelectedStartHour();
           const conditions = course.getConditions();
-          course.setWeatherScore(calcWeatherScore(weather, startHour, conditions));
+          course.setWeatherScore(
+            calcWeatherScore(weather, startHour, conditions)
+          );
         });
       })
     );
@@ -999,7 +1086,7 @@ async function pageInit(): Promise<void> {
   // Initialize map after ensuring DOM is ready
   console.log("📍 Initializing map...");
   initializeMap();
-  
+
   // Fetch rating dimensions
   await fetchRatingDimensions();
 
