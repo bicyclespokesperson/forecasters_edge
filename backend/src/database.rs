@@ -1,21 +1,11 @@
-use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
-use std::collections::HashMap;
 use anyhow::Result;
-use std::str::FromStr;
+use sqlx::{PgPool, Row};
+use std::collections::HashMap;
 
 use crate::models::*;
 use crate::time_weights::*;
 
-pub async fn setup_database() -> Result<SqlitePool> {
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite:./forecasters_edge.db".to_string());
-
-    let connect_options = SqliteConnectOptions::from_str(&database_url)?
-        .create_if_missing(true);
-
-    let pool = SqlitePool::connect_with(connect_options).await?;
-
-    // Run migrations
+pub async fn setup_database(pool: PgPool) -> Result<PgPool> {
     sqlx::migrate!("./migrations").run(&pool).await?;
 
     // Initialize default rating dimensions
@@ -24,7 +14,7 @@ pub async fn setup_database() -> Result<SqlitePool> {
     Ok(pool)
 }
 
-async fn initialize_rating_dimensions(pool: &SqlitePool) -> Result<()> {
+async fn initialize_rating_dimensions(pool: &PgPool) -> Result<()> {
     let dimensions = [
         ("difficulty", "Course difficulty level", 1, 5),
         ("quality", "Overall course quality", 1, 5),
@@ -33,7 +23,7 @@ async fn initialize_rating_dimensions(pool: &SqlitePool) -> Result<()> {
     for (name, description, min_val, max_val) in dimensions {
         sqlx::query(
             "INSERT OR IGNORE INTO rating_dimensions (name, description, min_value, max_value)
-             VALUES (?, ?, ?, ?)"
+             VALUES (?, ?, ?, ?)",
         )
         .bind(name)
         .bind(description)
@@ -46,16 +36,13 @@ async fn initialize_rating_dimensions(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-pub async fn get_course_ratings(
-    pool: &SqlitePool,
-    course_id: i32,
-) -> Result<HashMap<String, f64>> {
+pub async fn get_course_ratings(pool: &PgPool, course_id: i32) -> Result<HashMap<String, f64>> {
     let rows = sqlx::query(
         "SELECT rd.name, AVG(CAST(cr.rating AS REAL)) as avg_rating
          FROM course_ratings cr
          JOIN rating_dimensions rd ON cr.dimension_id = rd.id
          WHERE cr.course_id = ?
-         GROUP BY rd.name"
+         GROUP BY rd.name",
     )
     .bind(course_id)
     .fetch_all(pool)
@@ -74,7 +61,7 @@ pub async fn get_course_ratings(
 }
 
 pub async fn get_course_conditions(
-    pool: &SqlitePool,
+    pool: &PgPool,
     course_id: i32,
     time_config: &TimeWeightConfig,
 ) -> Result<Option<CourseCondition>> {
@@ -83,7 +70,7 @@ pub async fn get_course_conditions(
          FROM course_conditions
          WHERE course_id = ?
          ORDER BY timestamp DESC
-         LIMIT ?"
+         LIMIT ?",
     )
     .bind(course_id)
     .bind(time_config.max_reports as i64)
@@ -133,22 +120,20 @@ pub async fn get_course_conditions(
 }
 
 pub async fn insert_rating(
-    pool: &SqlitePool,
+    pool: &PgPool,
     course_id: i32,
     submission: RatingSubmission,
 ) -> Result<()> {
     for (dimension_name, rating) in submission.ratings {
-        let dimension_id: i32 = sqlx::query(
-            "SELECT id FROM rating_dimensions WHERE name = ?"
-        )
-        .bind(&dimension_name)
-        .fetch_one(pool)
-        .await?
-        .get("id");
+        let dimension_id: i32 = sqlx::query("SELECT id FROM rating_dimensions WHERE name = ?")
+            .bind(&dimension_name)
+            .fetch_one(pool)
+            .await?
+            .get("id");
 
         sqlx::query(
             "INSERT INTO course_ratings (course_id, user_id, dimension_id, rating)
-             VALUES (?, ?, ?, ?)"
+             VALUES (?, ?, ?, ?)",
         )
         .bind(course_id)
         .bind(&submission.user_id)
@@ -162,13 +147,13 @@ pub async fn insert_rating(
 }
 
 pub async fn insert_condition(
-    pool: &SqlitePool,
+    pool: &PgPool,
     course_id: i32,
     submission: ConditionSubmission,
 ) -> Result<()> {
     sqlx::query(
         "INSERT INTO course_conditions (course_id, user_id, rating, description)
-         VALUES (?, ?, ?, ?)"
+         VALUES (?, ?, ?, ?)",
     )
     .bind(course_id)
     .bind(&submission.user_id)
@@ -180,20 +165,22 @@ pub async fn insert_condition(
     Ok(())
 }
 
-pub async fn get_all_rating_dimensions(pool: &SqlitePool) -> Result<Vec<RatingDimension>> {
-    let rows = sqlx::query(
-        "SELECT id, name, description, min_value, max_value FROM rating_dimensions"
-    )
-    .fetch_all(pool)
-    .await?;
+pub async fn get_all_rating_dimensions(pool: &PgPool) -> Result<Vec<RatingDimension>> {
+    let rows =
+        sqlx::query("SELECT id, name, description, min_value, max_value FROM rating_dimensions")
+            .fetch_all(pool)
+            .await?;
 
-    let dimensions = rows.into_iter().map(|row| RatingDimension {
-        id: row.get("id"),
-        name: row.get("name"),
-        description: row.get("description"),
-        min_value: row.get("min_value"),
-        max_value: row.get("max_value"),
-    }).collect();
+    let dimensions = rows
+        .into_iter()
+        .map(|row| RatingDimension {
+            id: row.get("id"),
+            name: row.get("name"),
+            description: row.get("description"),
+            min_value: row.get("min_value"),
+            max_value: row.get("max_value"),
+        })
+        .collect();
 
     Ok(dimensions)
 }

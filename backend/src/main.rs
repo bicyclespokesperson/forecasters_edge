@@ -1,14 +1,23 @@
-use forecasters_edge_backend::{create_app, database::setup_database, time_weights::TimeWeightConfig, AppState};
+use forecasters_edge_backend::{
+    create_app, database::setup_database, time_weights::TimeWeightConfig, AppState,
+};
+use shuttle_axum::AxumService;
+use sqlx::PgPool;
 use std::env;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[shuttle_runtime::main]
+
+//async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main(
+    #[shuttle_shared_db::Postgres] pool: PgPool,
+    #[shuttle_runtime::Secrets] secrets: shuttle_runtime::SecretStore,
+) -> shuttle_axum::ShuttleAxum {
     dotenvy::dotenv().ok();
-    
+
     let verbose = env::args().any(|arg| arg == "-v" || arg == "--verbose");
-    
-    let db = setup_database().await?;
-    
+
+    let db = setup_database(pool).await?;
+
     let app_state = AppState {
         db,
         time_config: TimeWeightConfig::default(),
@@ -17,13 +26,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = create_app(app_state, verbose);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    if verbose {
-        println!("🚀 Server running on http://0.0.0.0:3000 (verbose mode enabled)");
-    } else {
-        println!("🚀 Server running on http://0.0.0.0:3000");
-    }
-    
-    axum::serve(listener, app).await?;
-    Ok(())
+    Ok(app.into())
 }

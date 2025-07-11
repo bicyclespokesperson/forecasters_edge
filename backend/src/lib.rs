@@ -5,24 +5,25 @@ use axum::{
     routing::{get, post},
     Router,
 };
+
 use serde::Deserialize;
-use sqlx::SqlitePool;
+use serde_json;
+use sqlx::PgPool;
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-use serde_json;
 
-pub mod models;
 pub mod database;
+pub mod models;
 pub mod time_weights;
 
-use models::*;
 use database::*;
+use models::*;
 use time_weights::*;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: SqlitePool,
+    pub db: PgPool,
     pub time_config: TimeWeightConfig,
     pub verbose: bool,
 }
@@ -30,7 +31,7 @@ pub struct AppState {
 pub fn create_app(state: AppState, verbose: bool) -> Router {
     let mut app_state = state;
     app_state.verbose = verbose;
-    
+
     let mut router = Router::new()
         .route("/api/courses/bulk", get(get_bulk_course_data))
         .route("/api/courses/:id/data", get(get_course_data))
@@ -39,11 +40,11 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
         .route("/health", get(health_check))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
-    
+
     if verbose {
         router = router.layer(TraceLayer::new_for_http());
     }
-    
+
     router
 }
 
@@ -51,21 +52,26 @@ async fn health_check() -> &'static str {
     "OK"
 }
 
-
 async fn get_course_data(
     Path(course_id): Path<i32>,
     State(state): State<AppState>,
 ) -> Result<Json<UserCourseData>, StatusCode> {
-    let ratings = get_course_ratings(&state.db, course_id).await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let conditions = get_course_conditions(&state.db, course_id, &state.time_config).await
+    let ratings = get_course_ratings(&state.db, course_id)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let response_data = UserCourseData { ratings, conditions };
-    
+    let conditions = get_course_conditions(&state.db, course_id, &state.time_config)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let response_data = UserCourseData {
+        ratings,
+        conditions,
+    };
+
     if state.verbose {
-        let json_str = serde_json::to_string_pretty(&response_data).unwrap_or_else(|_| "Failed to serialize".to_string());
+        let json_str = serde_json::to_string_pretty(&response_data)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
         println!("📤 GET /api/courses/{}/data -> {}", course_id, json_str);
     }
 
@@ -91,26 +97,33 @@ async fn get_bulk_course_data(
     let course_ids = parse_ids(&query.ids);
 
     let mut result = HashMap::new();
-    
+
     for course_id in course_ids {
-        let ratings = get_course_ratings(&state.db, course_id).await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        
-        let conditions = get_course_conditions(&state.db, course_id, &state.time_config).await
+        let ratings = get_course_ratings(&state.db, course_id)
+            .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        result.insert(course_id, UserCourseData { ratings, conditions });
+        let conditions = get_course_conditions(&state.db, course_id, &state.time_config)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        result.insert(
+            course_id,
+            UserCourseData {
+                ratings,
+                conditions,
+            },
+        );
     }
 
     if state.verbose {
-        let json_str = serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Failed to serialize".to_string());
+        let json_str = serde_json::to_string_pretty(&result)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
         println!("📤 GET /api/courses/bulk?ids={} -> {}", query.ids, json_str);
     }
 
     Ok(Json(result))
 }
-
-
 
 async fn submit_combined(
     Path(course_id): Path<i32>,
@@ -118,10 +131,11 @@ async fn submit_combined(
     Json(submission): Json<CombinedSubmission>,
 ) -> Result<StatusCode, StatusCode> {
     if state.verbose {
-        let json_str = serde_json::to_string_pretty(&submission).unwrap_or_else(|_| "Failed to serialize".to_string());
+        let json_str = serde_json::to_string_pretty(&submission)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
         println!("📥 POST /api/courses/{}/submit <- {}", course_id, json_str);
     }
-    
+
     // Submit ratings if provided
     if let Some(ratings) = submission.ratings {
         if !ratings.is_empty() {
@@ -129,46 +143,53 @@ async fn submit_combined(
                 user_id: submission.user_id.clone(),
                 ratings,
             };
-            insert_rating(&state.db, course_id, rating_submission).await
+            insert_rating(&state.db, course_id, rating_submission)
+                .await
                 .map_err(|e| {
                     eprintln!("Error inserting ratings: {:?}", e);
                     StatusCode::INTERNAL_SERVER_ERROR
                 })?;
         }
     }
-    
+
     // Submit conditions if provided
-    if let (Some(rating), Some(description)) = (submission.conditions_rating, submission.conditions_description) {
+    if let (Some(rating), Some(description)) = (
+        submission.conditions_rating,
+        submission.conditions_description,
+    ) {
         let condition_submission = ConditionSubmission {
             user_id: submission.user_id.clone(),
             rating,
             description,
         };
-        insert_condition(&state.db, course_id, condition_submission).await
+        insert_condition(&state.db, course_id, condition_submission)
+            .await
             .map_err(|e| {
                 eprintln!("Error inserting condition: {:?}", e);
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
     }
-    
+
     if state.verbose {
         println!("📤 POST /api/courses/{}/submit -> 201 CREATED", course_id);
     }
-    
+
     Ok(StatusCode::CREATED)
 }
 
 async fn get_rating_dimensions(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<RatingDimension>>, StatusCode> {
-    let dimensions = get_all_rating_dimensions(&state.db).await
+    let dimensions = get_all_rating_dimensions(&state.db)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     if state.verbose {
-        let json_str = serde_json::to_string_pretty(&dimensions).unwrap_or_else(|_| "Failed to serialize".to_string());
+        let json_str = serde_json::to_string_pretty(&dimensions)
+            .unwrap_or_else(|_| "Failed to serialize".to_string());
         println!("📤 GET /api/rating-dimensions -> {}", json_str);
     }
-    
+
     Ok(Json(dimensions))
 }
 
