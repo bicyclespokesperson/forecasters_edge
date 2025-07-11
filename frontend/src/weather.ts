@@ -258,7 +258,7 @@ function createRatingForm(course: DiscGolfCourse): string {
         ${createStarRating("conditions", 0)}
       </div>
       <input type="text" class="conditions-input" placeholder="Describe current conditions (optional)" 
-             value="${currentDescription}" maxlength="100">
+             value="${currentDescription}" maxlength="128">
       <input type="text" class="user-id-input" placeholder="Your name/username (optional)" maxlength="50">
       <div class="rating-form-buttons">
         <button class="rate-button primary" onclick="submitCourseRating(${
