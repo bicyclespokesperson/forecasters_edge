@@ -242,4 +242,63 @@ async fn test_admin_endpoints() {
     assert!(paginated["total_pages"].is_number());
 }
 
+#[tokio::test]
+async fn test_condition_submission_without_description() {
+    let server = setup_test_app().await;
+
+    // Submit condition with rating only (no description)
+    let submission = serde_json::json!({
+        "user_id": "test_user_rating_only",
+        "conditions_rating": 4
+    });
+
+    let response = server
+        .post("/api/courses/456/submit")
+        .json(&submission)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::CREATED);
+
+    // Verify the condition was saved by fetching course data
+    let response = server.get("/api/courses/456/data").await;
+    response.assert_status_ok();
+
+    let data: UserCourseData = response.json();
+    assert!(data.conditions.is_some());
+
+    let conditions = data.conditions.unwrap();
+    assert_eq!(conditions.rating, 4);
+    assert_eq!(conditions.description, None); // Should be None/null
+}
+
+#[tokio::test]
+async fn test_condition_submission_with_description() {
+    let server = setup_test_app().await;
+
+    // Submit condition with both rating and description
+    let submission = serde_json::json!({
+        "user_id": "test_user_full",
+        "conditions_rating": 3,
+        "conditions_description": "muddy trails"
+    });
+
+    let response = server
+        .post("/api/courses/789/submit")
+        .json(&submission)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::CREATED);
+
+    // Verify both rating and description were saved
+    let response = server.get("/api/courses/789/data").await;
+    response.assert_status_ok();
+
+    let data: UserCourseData = response.json();
+    assert!(data.conditions.is_some());
+
+    let conditions = data.conditions.unwrap();
+    assert_eq!(conditions.rating, 3);
+    assert_eq!(conditions.description, Some("muddy trails".to_string()));
+}
+
 
