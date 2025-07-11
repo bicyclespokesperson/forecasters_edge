@@ -1,0 +1,5 @@
+Need to fix bug where optional condition descriptions aren't support in prod
+
+Need to fix nonsense temperature comfort calculation
+
+Maybe the backend should serve the frontend, and we move away from github pages

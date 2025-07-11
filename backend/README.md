@@ -1,6 +1,6 @@
 # Forecaster's Edge Backend
 
-Rust backend API for disc golf course ratings and conditions, built with Axum and PostgreSQL.
+Rust backend API for disc golf course ratings and conditions, built with Axum and PostgreSQL. Currently hosted on [shuttle.rs](https://console.shuttle.dev/project/proj_01JZW0P9WDWA25ZZMQXS9KB24D/deployments).
 
 ## Quick Start
 
@@ -75,15 +75,18 @@ cargo run --bin xtask help
 ## API Endpoints
 
 ### Course Data
+
 - `GET /api/courses/{id}/data` - Get ratings and conditions for a course
 - `GET /api/courses/bulk?ids=1,2,3` - Get data for multiple courses
 - `POST /api/courses/{id}/submit` - Submit ratings and/or conditions
 
 ### Metadata
+
 - `GET /api/rating-dimensions` - Get available rating categories
 - `GET /health` - Health check
 
 ### Database Admin (Development/Debugging)
+
 - `GET /api/admin/tables` - Database overview with row counts
 - `GET /api/admin/rating-dimensions?page=1&limit=50` - View rating dimensions (paginated)
 - `GET /api/admin/course-ratings?page=1&limit=50` - View all course ratings (paginated)
@@ -106,15 +109,18 @@ curl -X POST http://localhost:3000/api/courses/123/submit \
 ## Environment Variables
 
 ### Local Development
+
 - `DATABASE_URL`: PostgreSQL connection (auto-detected for tests)
 
 ### Production (Shuttle)
+
 - Uses Shuttle's managed PostgreSQL database
 - Secrets managed via `Secrets.toml`
 
 ## Testing
 
 ### Automated Testing
+
 ```bash
 # All tests (automatically detects database)
 # Uses Shuttle's containerized PostgreSQL if available, otherwise local PostgreSQL
@@ -123,11 +129,12 @@ cargo run --bin xtask test
 # Unit tests only
 cargo test --lib
 
-# Integration tests only  
+# Integration tests only
 cargo test --test integration_tests
 ```
 
 ### Manual API Testing
+
 ```bash
 # Start server (recommended)
 shuttle run
@@ -158,7 +165,7 @@ curl http://localhost:8000/api/admin/course-ratings?page=1&limit=10
 ```
 src/
 ├── main.rs          # Shuttle runtime integration
-├── lib.rs           # API routes and handlers  
+├── lib.rs           # API routes and handlers
 ├── database.rs      # Database operations
 ├── models.rs        # Data structures
 └── bin/xtask.rs     # Development task runner
@@ -171,6 +178,7 @@ tests/
 ## Deployment
 
 ### Shuttle (Recommended)
+
 ```bash
 # Login to Shuttle
 cargo shuttle login
@@ -183,6 +191,7 @@ cargo shuttle logs
 ```
 
 ### Manual Deployment
+
 1. Set up PostgreSQL database
 2. Set `DATABASE_URL` environment variable
 3. Run migrations: `cargo run`
@@ -191,11 +200,12 @@ cargo shuttle logs
 ## Troubleshooting
 
 ### PostgreSQL Connection Issues
+
 ```bash
 # Check if PostgreSQL is running
 pg_isready
 
-# Start PostgreSQL  
+# Start PostgreSQL
 brew services start postgresql  # macOS
 sudo systemctl start postgresql  # Linux
 
@@ -204,6 +214,7 @@ cargo run --bin xtask clean-db
 ```
 
 ### Build Issues
+
 ```bash
 # Update dependencies
 cargo update
