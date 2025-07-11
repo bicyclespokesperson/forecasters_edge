@@ -301,4 +301,49 @@ async fn test_condition_submission_with_description() {
     assert_eq!(conditions.description, Some("muddy trails".to_string()));
 }
 
+#[tokio::test]
+async fn test_condition_description_length_validation() {
+    let server = setup_test_app().await;
+
+    // Test description that's too long (over 128 characters)
+    let long_description = "a".repeat(129); // 129 characters
+    let submission = serde_json::json!({
+        "user_id": "test_user_long_desc",
+        "conditions_rating": 3,
+        "conditions_description": long_description
+    });
+
+    let response = server
+        .post("/api/courses/999/submit")
+        .json(&submission)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::BAD_REQUEST);
+
+    // Test description that's exactly 128 characters (should work)
+    let max_description = "b".repeat(128); // 128 characters
+    let submission = serde_json::json!({
+        "user_id": "test_user_max_desc",
+        "conditions_rating": 4,
+        "conditions_description": max_description
+    });
+
+    let response = server
+        .post("/api/courses/998/submit")
+        .json(&submission)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::CREATED);
+
+    // Verify the description was saved correctly
+    let response = server.get("/api/courses/998/data").await;
+    response.assert_status_ok();
+
+    let data: UserCourseData = response.json();
+    assert!(data.conditions.is_some());
+    let conditions = data.conditions.unwrap();
+    assert_eq!(conditions.rating, 4);
+    assert_eq!(conditions.description, Some("b".repeat(128)));
+}
+
 

@@ -158,6 +158,13 @@ async fn submit_combined(
 
     // Submit conditions if provided
     if let Some(rating) = submission.conditions_rating {
+        // Validate description length (max 128 characters)
+        if let Some(ref desc) = submission.conditions_description {
+            if desc.len() > 128 {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+        }
+        
         let condition_submission = ConditionSubmission {
             user_id: submission.user_id.clone(),
             rating,
