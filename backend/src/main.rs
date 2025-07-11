@@ -15,7 +15,7 @@ async fn main(
 
     let verbose = env::var("VERBOSE").is_ok() || env::args().any(|arg| arg == "-v" || arg == "--verbose");
 
-    let db = setup_database(pool).await?;
+    let db = setup_database(pool, verbose).await?;
 
     let app_state = AppState {
         db,

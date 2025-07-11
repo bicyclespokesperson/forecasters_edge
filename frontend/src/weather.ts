@@ -232,9 +232,11 @@ async function submitCourseRating(courseId: number): Promise<void> {
       submission.ratings = ratings;
     }
     
-    if (conditionsRating > 0 && conditionsDescription) {
+    if (conditionsRating > 0) {
       submission.conditions_rating = conditionsRating;
-      submission.conditions_description = conditionsDescription;
+      if (conditionsDescription) {
+        submission.conditions_description = conditionsDescription;
+      }
     }
     
     if (!submission.ratings && !submission.conditions_rating) {

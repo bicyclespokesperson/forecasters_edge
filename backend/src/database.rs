@@ -5,8 +5,31 @@ use std::collections::HashMap;
 use crate::models::*;
 use crate::time_weights::*;
 
-pub async fn setup_database(pool: PgPool) -> Result<PgPool> {
+pub async fn setup_database(pool: PgPool, verbose: bool) -> Result<PgPool> {
+    if verbose {
+        println!("🔄 Running database migrations...");
+    }
     sqlx::migrate!("./migrations").run(&pool).await?;
+    if verbose {
+        println!("✅ Database migrations completed");
+    }
+
+    // Check if description column is nullable (debug info)
+    if verbose {
+        let result = sqlx::query(
+            "SELECT is_nullable FROM information_schema.columns 
+             WHERE table_name = 'course_conditions' AND column_name = 'description'"
+        )
+        .fetch_optional(&pool)
+        .await?;
+        
+        if let Some(row) = result {
+            let is_nullable: String = row.get("is_nullable");
+            println!("📋 course_conditions.description is_nullable: {}", is_nullable);
+        } else {
+            println!("⚠️  Could not find course_conditions.description column info");
+        }
+    }
 
     // Initialize default rating dimensions
     initialize_rating_dimensions(&pool).await?;
