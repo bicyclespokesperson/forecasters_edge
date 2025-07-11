@@ -42,10 +42,30 @@ const mockWeatherRequests =
     new URLSearchParams(window.location.search).has("mock"));
 const kmToMile = 0.621371;
 const maxDecimalPlaces = 3;
-const BACKEND_URL =
-  window.location.hostname === "localhost"
+const BACKEND_URL = (() => {
+  // Check for URL parameter override first
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const backendOverride = urlParams.get("backend");
+    if (backendOverride === "prod") {
+      return "https://forecastersedge-zzfd.shuttle.app";
+    } else if (backendOverride === "local") {
+      return "http://localhost:3000";
+    } else if (backendOverride) {
+      return backendOverride;
+    }
+  }
+  
+  // Check environment variable
+  if (process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL;
+  }
+  
+  // Default behavior
+  return window.location.hostname === "localhost"
     ? "http://localhost:3000"
     : "https://forecastersedge-zzfd.shuttle.app";
+})();
 
 function pluralizeMiles(distance: number): string {
   const rounded = Math.round(distance);
@@ -168,6 +188,35 @@ async function fetchRatingDimensions(): Promise<void> {
         max_value: 5,
       },
     ];
+  }
+}
+
+function formatConditionAge(timestamp?: string): string {
+  if (!timestamp) {
+    return "";
+  }
+  
+  try {
+    const conditionDate = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - conditionDate.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMinutes < 60) {
+      return diffMinutes <= 1 ? "just now" : `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return diffHours === 1 ? "1h ago" : `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return diffDays === 1 ? "1d ago" : `${diffDays}d ago`;
+    } else {
+      const diffWeeks = Math.floor(diffDays / 7);
+      return diffWeeks === 1 ? "1w ago" : `${diffWeeks}w ago`;
+    }
+  } catch (error) {
+    console.warn("Failed to parse timestamp:", timestamp, error);
+    return "";
   }
 }
 
@@ -469,8 +518,10 @@ function createPopupContent(course: DiscGolfCourse): string {
   const conditions = course.getConditions();
   if (conditions) {
     const descriptionText = conditions.description || "No description provided";
+    const ageText = formatConditionAge(conditions.timestamp);
+    const ageDisplay = ageText ? ` • ${ageText}` : "";
     factors.push(
-      `🏞️ Conditions: ${descriptionText} (${conditions.rating}/5)`
+      `🏞️ Conditions: ${descriptionText} (${conditions.rating}/5)${ageDisplay}`
     );
   } else {
     factors.push(`🏞️ Conditions: ❓`);

@@ -90,6 +90,7 @@ export interface CourseData {
   conditions?: {
     rating: number;
     description: string | null;
+    timestamp?: string;
   };
 }
 
@@ -130,7 +131,7 @@ export class DiscGolfCourse {
     return this.courseData?.ratings?.difficulty;
   }
 
-  public getConditions(): { rating: number; description: string | null } | undefined {
+  public getConditions(): { rating: number; description: string | null; timestamp?: string } | undefined {
     return this.courseData?.conditions;
   }
 
@@ -175,7 +176,7 @@ function scoreWind(windSpeedMph: number): number {
 export function calcWeatherScore(
   weather: WeatherResponse,
   startHour: number,
-  conditions?: { rating: number; description: string | null }
+  conditions?: { rating: number; description: string | null; timestamp?: string }
 ): WeatherScore {
   const weatherStartTime = new Date(weather.hourly.time[0]);
 
