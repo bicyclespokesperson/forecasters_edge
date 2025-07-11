@@ -13,14 +13,15 @@ import argparse
 import requests
 import json
 
-BASE_URL = "http://localhost:3000/api"
+HOSTNAME = "http://localhost:8000/"
+BASE_URL = f"{HOSTNAME}/api"
 
 
 def send_request(request_type):
     """Sends a request to the backend based on the request_type."""
 
     endpoints = {
-        "health": "http://localhost:3000/health",
+        "health": f"{HOSTNAME}/health",
         "rating-dimensions": f"{BASE_URL}/rating-dimensions",
         "course-data": f"{BASE_URL}/courses/613/data",
         "submit-combined": f"{BASE_URL}/courses/613/submit",

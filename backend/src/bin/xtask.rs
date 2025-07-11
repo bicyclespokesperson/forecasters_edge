@@ -77,21 +77,35 @@ fn setup_db() {
 fn clean_db() {
     println!("🧹 Cleaning test database...");
     
-    let output = Command::new("psql")
-        .args(&[
-            "postgres",
-            "-c", 
-            "DROP DATABASE IF EXISTS forecasters_edge_test; CREATE DATABASE forecasters_edge_test; GRANT ALL PRIVILEGES ON DATABASE forecasters_edge_test TO test_user;"
-        ])
+    // Drop database
+    let _ = Command::new("psql")
+        .args(&["postgres", "-c", "DROP DATABASE IF EXISTS forecasters_edge_test"])
+        .output();
+    
+    // Recreate database
+    let output1 = Command::new("psql")
+        .args(&["postgres", "-c", "CREATE DATABASE forecasters_edge_test"])
         .output()
         .expect("Failed to run psql");
     
-    if !output.status.success() {
-        eprintln!("❌ Database cleanup failed: {}", String::from_utf8_lossy(&output.stderr));
+    // Grant privileges
+    let output2 = Command::new("psql")
+        .args(&["postgres", "-c", "GRANT ALL PRIVILEGES ON DATABASE forecasters_edge_test TO test_user"])
+        .output()
+        .expect("Failed to run psql");
+    
+    if !output1.status.success() || !output2.status.success() {
+        eprintln!("❌ Database cleanup failed");
+        if !output1.status.success() {
+            eprintln!("Create DB error: {}", String::from_utf8_lossy(&output1.stderr));
+        }
+        if !output2.status.success() {
+            eprintln!("Grant privileges error: {}", String::from_utf8_lossy(&output2.stderr));
+        }
         exit(1);
     }
     
-    println!("✅ Database cleaned");
+    println!("✅ Database cleaned and recreated");
 }
 
 fn run_tests(parallel: bool) {
@@ -122,7 +136,7 @@ fn dev_server() {
     println!("🚀 Starting development server...");
     
     let status = Command::new("cargo")
-        .args(&["run", "--", "-v"])
+        .args(&["run", "--bin", "forecasters-edge-backend", "--", "-v"])
         .status()
         .expect("Failed to start server");
     

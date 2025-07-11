@@ -2,7 +2,7 @@
 
 -- Flexible rating dimensions table
 CREATE TABLE rating_dimensions (
-  id INTEGER PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   description TEXT,
   min_value INTEGER DEFAULT 1,
@@ -12,7 +12,7 @@ CREATE TABLE rating_dimensions (
 
 -- Course ratings with dimensions
 CREATE TABLE course_ratings (
-  id INTEGER PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   course_id INTEGER NOT NULL,
   user_id TEXT NOT NULL,
   dimension_id INTEGER NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE course_ratings (
 
 -- Individual condition reports
 CREATE TABLE course_conditions (
-  id INTEGER PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   course_id INTEGER NOT NULL,
   user_id TEXT NOT NULL,
   rating INTEGER NOT NULL,         -- 1-5 scale (5 = best conditions)
