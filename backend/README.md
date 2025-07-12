@@ -1,6 +1,6 @@
 # Forecaster's Edge Backend
 
-Rust API for disc golf course ratings and conditions, built with Axum and PostgreSQL.
+Rust API for disc golf course ratings and conditions, built with Axum and PostgreSQL. Hosted at [shuttle.rs](https://console.shuttle.dev/project/proj_01JZW0P9WDWA25ZZMQXS9KB24D/deployments).
 
 ## Quick Start
 
