@@ -485,7 +485,7 @@ footer a {
 
 .popup-content {
   padding: 10px;
-  min-width: 280px;
+  min-width: 200px;
 }
 
 .popup-course-name {
@@ -496,23 +496,18 @@ footer a {
 
 .popup-score {
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .popup-details {
-  font-size: 0.95em;
-  margin-bottom: 8px;
+  font-size: 0.9em;
+  margin-bottom: 10px;
 }
 
 .chart-container {
-  width: 160px;
-  height: 160px;
-  margin: 8px auto 6px auto;
-}
-
-.weather-factors .factor {
-  font-size: 0.9em;
-  margin-bottom: 2px;
+  width: 150px;
+  height: 150px;
+  margin: 10px auto;
 }
 
 /* Dark mode popup styles */

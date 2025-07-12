@@ -3,7 +3,7 @@
 Find the best nearby disc golf courses based on weather conditions, with user ratings and real-time course conditions.
 
 - **Frontend**: TypeScript web app using [Open-Meteo](https://open-meteo.com/) Weather API
-- **Backend**: Rust API that serves both frontend and API endpoints
+- **Backend**: Rust API for course ratings and conditions
 
 ## Quick Start
 
@@ -13,20 +13,17 @@ cd frontend/
 npm install
 npm run start       # Development server
 npm run start:mock  # Development with mock data
+npm run build       # Production build
 ```
 
-### Backend Development (serves frontend + API)
+### Backend Development
 ```bash
 cd backend/
-shuttle run         # Serves frontend at / and API at /api/*
+shuttle run         # Development server (recommended)
 cargo run --bin xtask test  # Run tests
 ```
 
 ## Deployment
 
-- **Unified**: Single deployment serves both frontend and backend
-  ```bash
-  cd backend/
-  cargo shuttle deploy  # Deploys frontend + API together
-  ```
-- **Frontend only**: GitHub Pages (`npm run push-gh-pages`)
+- **Frontend**: GitHub Pages (`npm run push-gh-pages`)
+- **Backend**: Shuttle.rs (`cargo shuttle deploy`)

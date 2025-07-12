@@ -10,6 +10,3 @@ target/
 Cargo.lock
 *.db
 *.sqlite
-
-# Frontend build artifacts copied to backend
-backend/frontend_dist/

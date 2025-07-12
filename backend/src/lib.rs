@@ -1,13 +1,11 @@
 use axum::{
     extract::{Path, Query, State},
-    http::{header, StatusCode, Uri},
-    response::{Html, IntoResponse, Json, Response},
+    http::StatusCode,
+    response::Json,
     routing::{get, post},
     Router,
 };
 
-use include_dir::{include_dir, Dir};
-use mime_guess::from_path;
 use serde::Deserialize;
 use serde_json;
 use sqlx::PgPool;
@@ -23,9 +21,6 @@ use database::*;
 use models::*;
 use time_weights::*;
 
-// Embed the entire frontend dist directory at compile time
-static ASSETS: Dir<'_> = include_dir!("frontend_dist");
-
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
@@ -38,7 +33,6 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
     app_state.verbose = verbose;
 
     let mut router = Router::new()
-        // API routes
         .route("/api/courses/bulk", get(get_bulk_course_data))
         .route("/api/courses/{id}/data", get(get_course_data))
         .route("/api/courses/{id}/submit", post(submit_combined))
@@ -48,8 +42,6 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
         .route("/api/admin/course-ratings", get(get_admin_course_ratings))
         .route("/api/admin/course-conditions", get(get_admin_course_conditions))
         .route("/health", get(health_check))
-        // Static file serving - this should be last to catch all other routes
-        .fallback(serve_static_file)
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 
@@ -62,34 +54,6 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
 
 async fn health_check() -> &'static str {
     "OK"
-}
-
-async fn serve_static_file(uri: Uri) -> impl IntoResponse {
-    let path = uri.path().trim_start_matches('/');
-    
-    // If the path is empty, serve index.html
-    let path = if path.is_empty() { "index.html" } else { path };
-    
-    // Try to get the file from embedded assets
-    if let Some(file) = ASSETS.get_file(path) {
-        let mime_type = from_path(path).first_or_octet_stream();
-        
-        Response::builder()
-            .header(header::CONTENT_TYPE, mime_type.as_ref())
-            .body(file.contents().into())
-            .unwrap()
-    } else {
-        // If file not found, serve index.html for SPA routing
-        if let Some(index_file) = ASSETS.get_file("index.html") {
-            Html(String::from_utf8_lossy(index_file.contents()).to_string()).into_response()
-        } else {
-            // If even index.html is not found, return 404
-            Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body("404 Not Found".into())
-                .unwrap()
-        }
-    }
 }
 
 async fn get_course_data(
