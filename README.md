@@ -1,45 +1,29 @@
 ## Forecaster's Edge
 
-Ranks the weather at nearby disc golf courses with user ratings and course conditions. 
+Find the best nearby disc golf courses based on weather conditions, with user ratings and real-time course conditions.
 
-- **Frontend**: Interactive web app powered by the [Open-Meteo](https://open-meteo.com/) Weather API
-- **Backend**: Rust API for user-generated course ratings and conditions
+- **Frontend**: TypeScript web app using [Open-Meteo](https://open-meteo.com/) Weather API
+- **Backend**: Rust API for course ratings and conditions
 
-### Project Structure
-
-```
-forecasters-edge/
-├── frontend/          # TypeScript web application
-│   ├── src/          # Source code
-│   ├── data/         # Course data and weather samples
-│   └── package.json  # Frontend dependencies
-├── backend/          # Rust API server
-│   ├── src/         # Rust source code
-│   └── Cargo.toml   # Rust dependencies
-└── README.md
-```
+## Quick Start
 
 ### Frontend Development
-
 ```bash
 cd frontend/
 npm install
-npm run start      # Development server
-npm run test       # Run tests
-npm run build      # Production build
-npm run lint       # Code formatting
+npm run start       # Development server
+npm run start:mock  # Development with mock data
+npm run build       # Production build
 ```
 
 ### Backend Development
-
 ```bash
 cd backend/
-cargo run          # Start API server
-cargo test         # Run tests
-cargo clippy       # Linting
+shuttle run         # Development server (recommended)
+cargo run --bin xtask test  # Run tests
 ```
 
-### Deployment
+## Deployment
 
 - **Frontend**: GitHub Pages (`npm run push-gh-pages`)
-- **Backend**: Railway or similar Rust hosting platform
+- **Backend**: Shuttle.rs (`cargo shuttle deploy`)
