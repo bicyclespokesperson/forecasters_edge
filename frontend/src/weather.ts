@@ -613,12 +613,12 @@ function addCourseMarkers(courses: DiscGolfCourse[]): void {
 
       const popupContent = createPopupContent(course);
       const popup = marker.bindPopup(popupContent, {
-        maxWidth: 280,
+        maxWidth: 320,
         closeButton: true,
         autoPan: true,
         autoPanPadding: [10, 10],
         keepInView: true,
-        maxHeight: 300,
+        maxHeight: 350,
         className: 'custom-popup'
       });
 

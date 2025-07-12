@@ -1,17 +1,17 @@
 # Forecaster's Edge Backend
 
-Rust API for disc golf course ratings and conditions, built with Axum and PostgreSQL. Hosted at [shuttle.rs](https://console.shuttle.dev/project/proj_01JZW0P9WDWA25ZZMQXS9KB24D/deployments).
+Rust API for disc golf course ratings and conditions, built with Axum and PostgreSQL. Serves both frontend and API from a single deployment using embedded assets. Hosted at [shuttle.rs](https://console.shuttle.dev/project/proj_01JZW0P9WDWA25ZZMQXS9KB24D/deployments).
 
 ## Quick Start
 
 ```bash
-# Development server (recommended)
+# Development server - serves frontend at / and API at /api/*
 shuttle run
 
 # Run tests
 cargo run --bin xtask test
 
-# Deploy to production
+# Deploy unified frontend + backend
 cargo shuttle deploy
 ```
 
@@ -19,6 +19,13 @@ cargo shuttle deploy
 
 - **Rust**: Install from https://rustup.rs/
 - **Docker**: Required for `shuttle run`
+- **Node.js**: Required for frontend building (build script automatically builds frontend)
+
+## Architecture
+
+- **Embedded Assets**: Frontend is embedded directly in the binary at compile time
+- **Unified Serving**: Frontend served at `/`, API at `/api/*`
+- **Build Integration**: Frontend automatically built before backend compilation
 
 ## API Endpoints
 
