@@ -1,0 +1,65 @@
+<!DOCTYPE html><link rel=stylesheet href=frontend.2a636267.css><link rel=stylesheet href=https://unpkg.com/leaflet@1.9.4/dist/leaflet.css><link rel=stylesheet href=https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css><link rel=stylesheet href=https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css><link rel=icon type=image/x-icon href=favicon.07ba74ce.ico><meta name=viewport content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Forecaster's Edge</title><body>
+    <div class=header>
+      <h1>Forecaster's Edge</h1>
+      
+      <div class=controls>
+        <div class=location-control>
+          <label for=userLatLon>Location:</label>
+          <input id=userLatLon value autocomplete=off placeholder="ZIP code or coordinates" title="Enter a ZIP Code or latitude/longitude coordinates">
+        </div>
+        
+        <div class=time-control>
+          <label for=timeSlider>Start Time:</label>
+          <div class=time-slider-container>
+            <input type=range id=timeSlider min=0 max=23 value=18 step=1>
+            <span id=timeDisplay>6:00 PM</span>
+          </div>
+        </div>
+        
+        <div class=course-control>
+          <button id=loadWeatherButton>Load Weather Data</button>
+          <button id=showMoreButton style=display:none>Show More Courses</button>
+          <span id=courseCount></span>
+        </div>
+      </div>
+    </div>
+
+    <div class=main-content>
+      <div id=map></div>
+      
+      <div class=sidebar id=sidebar>
+        <div class=sidebar-header>
+          <h3>Nearby Courses</h3>
+          <button id=toggleSidebar class=toggle-btn>×</button>
+        </div>
+        
+        <div class=sort-controls>
+          <label>Sort by:</label>
+          <select id=sortSelect>
+            <option value=score>Weather Score</option>
+            <option value=distance>Distance</option>
+            <option value=name>Name</option>
+            <option value=holes>Holes</option>
+          </select>
+        </div>
+        
+        <div id=courseList class=course-list>
+          <div class=loading>Click "Load Weather Data" to find nearby courses</div>
+        </div>
+      </div>
+    </div>
+
+    <div id=sunsetTime class=sunset-info>Sunset today:</div>
+
+    <script src=https://unpkg.com/leaflet@1.9.4/dist/leaflet.js></script>
+    <script src=https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js></script>
+    <script src=https://cdn.jsdelivr.net/npm/chart.js></script>
+    <script src=frontend.1ce6450a.js type=module></script>
+    
+    <footer>
+      <p>  
+      <a href=about.html>About Forecaster's Edge</a><br>
+      Powered by the <a href=https://open-meteo.com/>Open-Meteo</a> Weather API
+      </p>
+    </footer>
+  
