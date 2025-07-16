@@ -13,17 +13,18 @@ cd frontend/
 npm install
 npm run start       # Development server
 npm run start:mock  # Development with mock data
-npm run build       # Production build
 ```
 
 ### Backend Development
 ```bash
 cd backend/
-shuttle run         # Development server (recommended)
+shuttle run         # Development server
 cargo run --bin xtask test  # Run tests
 ```
 
 ## Deployment
 
-- **Frontend**: GitHub Pages (`npm run push-gh-pages`)
-- **Backend**: Shuttle.rs (`cargo shuttle deploy`)
+```bash
+cd frontend/
+npm run deploy:combined  # Builds frontend and deploys everything to Shuttle
+```

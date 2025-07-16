@@ -5,14 +5,14 @@ Rust API for disc golf course ratings and conditions, built with Axum and Postgr
 ## Quick Start
 
 ```bash
-# Development server (recommended)
+# Development server
 shuttle run
 
 # Run tests
 cargo run --bin xtask test
 
-# Deploy to production
-cargo shuttle deploy
+# Deploy (use frontend script instead)
+cd ../frontend && npm run deploy:combined
 ```
 
 ## Prerequisites

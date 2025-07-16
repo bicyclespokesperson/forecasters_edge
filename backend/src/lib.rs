@@ -12,6 +12,7 @@ use sqlx::PgPool;
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
+use tower_http::services::{ServeDir, ServeFile};
 
 pub mod database;
 pub mod models;
@@ -42,6 +43,10 @@ pub fn create_app(state: AppState, verbose: bool) -> Router {
         .route("/api/admin/course-ratings", get(get_admin_course_ratings))
         .route("/api/admin/course-conditions", get(get_admin_course_conditions))
         .route("/health", get(health_check))
+        .fallback_service(
+            ServeDir::new("frontend_dist")
+                .not_found_service(ServeFile::new("frontend_dist/index.html"))
+        )
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 

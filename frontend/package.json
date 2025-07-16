@@ -15,6 +15,8 @@
     "build-dev": "parcel build ./index.html --no-optimize --public-url ./ && cp -r ./data ./dist/ && touch ./dist/.nojekyll",
     "prebuild": "shx rm -rf dist/*",
     "build": "parcel build ./index.html --public-url ./ && cp -r ./data ./dist/ && touch ./dist/.nojekyll",
+    "build:backend": "npm run build && ../backend/build_frontend.sh",
+    "deploy:combined": "npm run build:backend && cd ../backend && cargo shuttle deploy",
     "push-gh-pages": "push-dir --dir=dist --branch=gh-pages --cleanup --verbose"
   },
   "author": "Jeremy Sigrist",

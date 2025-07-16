@@ -61,10 +61,10 @@ const BACKEND_URL = (() => {
     return process.env.BACKEND_URL;
   }
   
-  // Default behavior
+  // Default behavior - use same origin for production, localhost:3000 for development
   return window.location.hostname === "localhost"
     ? "http://localhost:3000"
-    : "https://forecastersedge-zzfd.shuttle.app";
+    : window.location.origin;
 })();
 
 function pluralizeMiles(distance: number): string {
